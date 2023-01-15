@@ -1,0 +1,282 @@
+
+mainmenu "Pine64 OX64 SDK configuration"
+
+menu "Application"
+	osource "Kconfig"
+endmenu
+
+menu "Board Support Configuration"
+	menu "$(BFLB_BOARD) Board Config"
+		source "$(BFLB_BOARD_DIR)/$(BFLB_BOARD)/Kconfig"
+	endmenu
+
+	config PSRAM
+		bool "Enable PSRAM"
+		default y
+
+	config ETHERNET
+		bool "Enable Ethernet"
+		default n
+	
+	config BSP_SDH_SDCARD
+		bool "Enable SD SDHCI Driver Support"
+		default n
+
+	config BSP_SPI_SDCARD
+		bool "Enable SD SPI Driver Support"
+		default n
+	
+	config BSP_LCD
+		bool "Enable LCD Driver Support"
+		default n
+
+	config BSP_IMAGE_SENSOR
+		bool "Enable Image Sensor Driver Support"
+		default n
+endmenu
+
+menu "CPU Configuration"
+	config BFLB_CHIP
+		string
+		default "$(BFLB_CHIP)"
+	config BLFB_CPU_ID
+		string
+		default "$(BFLB_CPU_ID)"
+	
+	config ROMAPI
+		bool "Enable ROM API"
+		default y
+endmenu
+
+
+menu "SDK configuration"
+	menu "Logging Configuration"
+		choice LOG_TYPE
+			prompt "Logging Type"
+			default BFLOG
+			help
+				Select the logging type to use.
+			config BFLOG
+				bool "Use BFLOG Implementation"
+				depends on VLIBC
+			config LOG
+				bool "Use Basic LOG_* Functions"
+			config LOG_DISABLE
+				bool "No Logging"
+		endchoice
+		menu "Logging Options"
+			visible if !LOG_DISABLE
+			config LOG_LEVEL
+				int "Logging Level"
+				default 3
+				range 0 5
+				depends on !LOG_DISABLE
+				help 
+					Higher Levels mean more logging
+
+			config BFLOG_POOL_SIZE
+				int "BFLOG Pool Size"
+				default 1024
+				depends on BFLOG
+				help
+					Number of bytes to allocate for BFLOG
+
+			config BFLOG_USER
+				bool "Enable Custom BFLOG Header File"
+				default n
+				depends on BFLOG
+				help
+					Enable BFLOG User Header File
+
+			config BFLOG_DEBUG
+				bool "Enable BFLOG Debugging"
+				default n
+				depends on BFLOG
+				help
+					Enable BFLOG Debug
+		endmenu
+
+		config ASSERT_DISABLE
+			bool "Disable ASSERT"
+			default n
+	endmenu
+	menu "Libc Configuration"
+		choice LIBC_TYPE
+			prompt "LibC Type"
+			default LIBC
+			help
+				Select the Libc implementation to use.
+			config VLIBC
+				bool "VFS Libc Support"
+				help
+					VLIBC supports basic hosting (open/close/read/write) support
+			config LIBC
+				bool "Basic Libc Support"
+				help
+					LIBC supports basic libc functions only 
+		endchoice
+		config VLIBC_DEBUG
+			bool "Enable VFS Libc Debug"
+			default n
+			depends on VLIBC
+		config VLIBC_FATFS
+			bool "Enable FATFS Support"
+			default n
+			depends on VLIBC
+			depends on FATFS
+		menu "Printf Support"
+			config VSNPRINTFNANO
+				bool "Enable VSNPRINTF NANO Support"
+				default n
+				depends on LIBC
+			config CONFIG_VSNPRINTF_FLOAT
+				bool "Enable VSNPRINTF FLOAT Support"
+				default y
+			config VSNPRINTF_FLOAT_EX
+				bool "Enable VSNPRINTF FLOAT EX Support"
+				default y
+			config VSNPRINTF_LONG_LONG
+				bool "Enable VSNPRINTF LONG LONG Support"
+				default y
+			config VSNPRINTF_WRITEBACK
+				bool "Enable VSNPRINTF WRITEBACK Support"
+				default n			
+		endmenu
+		config TLSF
+			bool "Enable TLSF Malloc Library"
+			default n
+		config MMHEAP_USER
+			bool "Enable MMHEAP User Malloc Library"
+			default n
+			depends on !TLSF
+		menu "Block Pool"
+			config BFLB_BLOCK_POOL_DEBUG
+				bool "Enable Block Pool Debug"
+				default n
+			config BFLB_BLOCK_POOL_MTX_TIMEOUT
+				int "Block Pool Mutex Timeout"
+				default 100
+				range 0 1000
+		endmenu
+		config CONFIG_TIMEZONE
+			int "Timezone offset"
+			default 8
+			range 0 24
+			help
+				Timezone offset in hours
+
+	endmenu
+	menu "FileSystem Configuration"
+		config FATFS
+			bool "Enable FATFS Support"
+			default n
+		config FF_FS_REENTRANT
+			bool "Enable Re-entrant Support in FatFS"
+			default n
+			depends on FATFS
+		config FATFS_SDH_SDCARD
+			bool "Enable SD Card Support for FatFS"
+			default y if BSP_SDH_SDCARD || BSP_SPI_SDCARD
+			depends on FATFS
+			depends on BSP_SDH_SDCARD || BSP_SPI_SDCARD
+	endmenu	
+	menu "SDK Components"
+		config SHELL
+			bool "Enable Shell"
+			default n
+		config FREERTOS
+			bool "Enable FreeRTOS"
+			default n
+		config CHERRYUSB
+			bool "Enable Cherry USB"
+			default n
+			menu "CherryUSB Options"
+				visible if CHERRYUSB
+
+				config CHERRYUSB_DEVICE
+					bool "USB Device Support"
+					depends on CHERRYUSB
+					default y
+
+				menu "CherryUSB Device Options"
+					visible if CHERRYUSB_DEVICE
+
+					config CONFIG_USB_ALIGN_SIZE
+						int "Alignment Size"
+						default 32
+						range 0 1024
+						depends on CHERRYUSB_DEVICE
+
+					config CONFIG_USB_HS
+						bool "Enable High Speed Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+
+					config CHERRYUSB_DEVICE_CDC
+						bool "Enable CDC Device Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+					
+					config CHERRYUSB_DEVICE_HID
+						bool "Enable HID Device Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+
+					config CHERRYUSB_DEVICE_MSC
+						bool "Enable MSC Device Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+					
+					config CHERRYUSB_DEVICE_AUDIO
+						bool "Enable AUDIO Device Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+					
+					config CHERRYUSB_DEVICE_VIDEO
+						bool "Enable VIDEO Device Support"
+						default y
+						depends on CHERRYUSB_DEVICE
+				endmenu
+
+				config CHERRYUSB_HOST
+					bool "USB Host Support"
+					depends on CHERRYUSB
+					default y
+			endmenu
+		config LUA
+			bool "Enable Lua"
+			default n
+			
+			menu "Lua Options"
+			visible if LUA
+
+			config LUA_LHAL
+				bool "Enable Lua HAL Support"
+				default y
+				depends on LUA	
+
+			endmenu
+		config LVGL
+			bool "Enable LVGL"
+			default n
+		config LWIP
+			bool "Enable LWIP"
+			default n
+		config BLUETOOTH
+			bool "Enable Bluetooth"
+			default n
+		config XZ
+			bool "Enable XZ"
+			default n
+		config TINYMAIX
+			bool "Enable TinyMaix"
+			default n
+		config TENSORFLOWLITE
+			bool "Enable Tensorflow Lite"
+			default n
+	endmenu
+endmenu
+
+menu "Custom Components"
+	osource "${PINE64_SDK_PATH}/components/*/Kconfig"
+endmenu

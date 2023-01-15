@@ -1,0 +1,9 @@
+
+config EXAMPLE_HELLOWORLD
+	string "String to Echo"
+	default "hello world"
+
+config EXAMPLE_INTERVAL
+	int "Interval in milliseconds"
+	default 1000
+	range 100 10000

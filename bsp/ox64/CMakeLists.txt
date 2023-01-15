@@ -1,0 +1,9 @@
+sdk_add_include_directories(include)
+
+target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/board.c)
+
+sdk_set_linker_script(bl808_flash_${CPU_ID}.ld)
+
+if(CONFIG_PSRAM)
+sdk_add_compile_definitions(-DCONFIG_PSRAM)
+endif()

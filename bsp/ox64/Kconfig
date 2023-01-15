@@ -1,0 +1,20 @@
+config JTAG_DEBUG
+    bool "JTAG debug support"
+    help
+      This option enables JTAG debug support for the test kernel.
+
+menu "JTAG Configuration"
+    visible if JTAG_DEBUG
+    choice
+        prompt "JTAG Pinmux"
+        default JTAG_M0
+        help
+            Select the core to attach the JTAG Debug Socket to.
+        config JTAG_M0
+            bool "Debug M0 Core"
+        config JTAG_D0
+            bool "Debug D0 Core"
+        config JTAG_LP
+            bool "Debug LP Core"
+    endchoice
+endmenu
