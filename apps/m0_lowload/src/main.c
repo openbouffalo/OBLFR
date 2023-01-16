@@ -23,6 +23,8 @@
 
 #include <bl808_common.h>
 #include <bflb_irq.h>
+#include <bflb_clock.h>
+#include <bflb_gpio.h>
 #include <bl808_ipc.h>
 #include <ipc_reg.h>
 #include <sdh_reg.h>
@@ -53,6 +55,7 @@ static void Send_IPC_IRQ(int device)
 #ifdef CONFIG_LL_IRQFWD_SDH
 void SDH_MMC1_IRQHandler(int irq, void *arg)
 {
+    LOG_D("Got SDH IRQ\r\n");
     Send_IPC_IRQ(BFLB_IPC_DEVICE_SDHCI);
 }
 #endif
@@ -60,6 +63,7 @@ void SDH_MMC1_IRQHandler(int irq, void *arg)
 #ifdef CONFIG_LL_IRQFWD_UART2
 void UART2_IRQHandler(int irq, void *arg)
 {
+    LOG_D("Got UART IRQ\r\n");
     Send_IPC_IRQ(BFLB_IPC_DEVICE_UART2);
 }
 #endif
@@ -67,6 +71,7 @@ void UART2_IRQHandler(int irq, void *arg)
 #ifdef CONFIG_LL_IRQFWD_USB
 void USB_IRQHandler(int irq, void *arg)
 {
+    LOG_D("Got USB IRQ\r\n")
     Send_IPC_IRQ(BLFB_IPC_DEVICE_USB);
 }
 #endif
@@ -78,12 +83,40 @@ void IPC_M0_IRQHandler(int irq, void *arg)
 
     for (i = 0; i < sizeof(irqStatus) * 8; i++)
     {
-        if (irqStatus & (1 << i))
+        if (irqStatus & (1 << i)) {
+            LOG_D("Got IPC EOI for device %d\r\n");
             bflb_irq_enable(ipc_irqs[i]);
+        }
     }
 
     BL_WR_REG(IPC0_BASE, IPC_CPU0_IPC_ICR, irqStatus);
 }
+
+#ifdef CONFIG_LL_IRQFWD_SDH
+int setup_sdh_peripheral() {
+    LOG_D("setting up SDH peripheral\r\n");
+    struct bflb_device_s *gpio;
+
+    gpio = bflb_device_get_by_name("gpio");
+    bflb_gpio_init(gpio, GPIO_PIN_0, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+    bflb_gpio_init(gpio, GPIO_PIN_1, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+    bflb_gpio_init(gpio, GPIO_PIN_2, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+    bflb_gpio_init(gpio, GPIO_PIN_3, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+    bflb_gpio_init(gpio, GPIO_PIN_4, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+    bflb_gpio_init(gpio, GPIO_PIN_5, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
+
+    PERIPHERAL_CLOCK_SDH_ENABLE();
+    // uint32_t tmp_val;
+    // tmp_val = BL_RD_REG(PDS_BASE, PDS_CTL5);
+    // uint32_t tmp_val2 = BL_GET_REG_BITS_VAL(tmp_val, PDS_CR_PDS_GPIO_KEEP_EN);
+    // tmp_val2 &= ~(1 << 0);
+    // tmp_val = BL_SET_REG_BITS_VAL(tmp_val, PDS_CR_PDS_GPIO_KEEP_EN, tmp_val2);
+    // BL_WR_REG(PDS_BASE, PDS_CTL5, tmp_val);
+    // GLB_AHB_MCU_Software_Reset(GLB_AHB_MCU_SW_SDH);
+    LOG_D("SDH peripheral clock: %d\r\n", bflb_clk_get_peripheral_clock(BFLB_DEVICE_TYPE_SDH, 0)/1000000);
+    return SUCCESS;
+}
+#endif
 
 int main(void)
 {
@@ -102,6 +135,9 @@ int main(void)
 
     bflb_irq_attach(SDH_IRQn, SDH_MMC1_IRQHandler, NULL);
     bflb_irq_enable(SDH_IRQn);
+    if (setup_sdh_peripheral() != SUCCESS) {
+        LOG_E("Failed to setup SDH peripheral\r\n");
+    }
 #endif
 
 #ifdef CONFIG_LL_IRQFWD_UART2

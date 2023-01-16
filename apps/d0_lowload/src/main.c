@@ -160,10 +160,8 @@ int main(void)
     bflb_uart_set_console(uart0);
 
 
-    LOG_I("C906 start...\r\n");
+    LOG_I("D0 start...\r\n");
     uint64_t start_time, stop_time;
-
-    LOG_I("mtimer clk:%d\r\n", bflb_mtimer_get_freq());
 
     CPU_MTimer_Delay_MS(100);
 
