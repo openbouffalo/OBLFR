@@ -20,6 +20,9 @@
  * under the License.
  *
  */
+
+#define DBG_TAG "MAIN"
+
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>

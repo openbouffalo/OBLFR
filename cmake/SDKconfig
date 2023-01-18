@@ -58,7 +58,7 @@ menu "SDK configuration"
 				Select the logging type to use.
 			config BFLOG
 				bool "Use BFLOG Implementation"
-				depends on VLIBC
+				depends on SDK_BROKEN
 			config LOG
 				bool "Use Basic LOG_* Functions"
 			config LOG_DISABLE
@@ -144,7 +144,7 @@ menu "SDK configuration"
 		endmenu
 		config TLSF
 			bool "Enable TLSF Malloc Library"
-			default n
+			default y
 		config MMHEAP_USER
 			bool "Enable MMHEAP User Malloc Library"
 			default n

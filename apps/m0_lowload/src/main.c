@@ -21,6 +21,8 @@
  *
  */
 
+#define DBG_TAG "MAIN"
+
 #include <bl808_common.h>
 #include <bflb_irq.h>
 #include <bflb_clock.h>
@@ -32,6 +34,7 @@
 #include <board.h>
 #include "irq-forward.h"
 #include "sdkconfig.h"
+
 
 static uint32_t ipc_irqs[32] = {
 #ifdef CONFIG_LL_IRQFWD_SDH
