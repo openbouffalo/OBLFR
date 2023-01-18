@@ -46,6 +46,8 @@ extern void unlz4(const void *aSource, void *aDestination, uint32_t FileLen);
 #define DTB_SRC_ADDR 0x58080000 // 64k
 #define DTB_DST_ADDR 0x51ff8000
 
+#define BOOT_HDR_SRC_ADDR 0x58080000 // 64k
+
 static struct bflb_device_s *uart0;
 
 #if (__riscv_xlen == 64)
@@ -102,9 +104,101 @@ const pmp_config_entry_t pmp_entry_tab[8] = {
 
 #endif
 
+typedef enum {
+    VM_BOOT_SECTION_HEADER = 0,
+    VM_BOOT_SECTION_DTB,
+    VM_BOOT_SECTION_OPENSBI,
+    VM_BOOT_SECTION_KERNEL,
+    VM_BOOT_SECTION_MAX,
+} vm_boot_section_t;
+
+typedef struct  __attribute__((packed, aligned(4))) {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t sections;
+    uint32_t crc;
+    struct {
+        uint32_t magic;
+        uint32_t type;
+        uint32_t offset;
+        uint32_t size;
+    } section[VM_BOOT_SECTION_MAX];
+} vm_boot_header_t;
+
+static char *sections[] = {
+    "BootHeader",
+    "dtb", 
+    "OpenSBI", 
+    "Kernel", 
+    "Unknown"
+};
+
+static char *get_sectionstr(uint32_t type)
+{
+    if (type < VM_BOOT_SECTION_MAX) {
+        return sections[type];
+    }
+
+    return sections[VM_BOOT_SECTION_MAX];
+}
+
+
 void linux_load()
 {
     LOG_I("linux load start... \r\n");
+
+    vm_boot_header_t *header = (vm_boot_header_t *)BOOT_HDR_SRC_ADDR;
+    if (header->magic != 0x4c4d5642) {
+        LOG_E("invalid boot header magic: 0x%08x\r\n", header->magic);
+        return;
+    }
+
+    if (header->version != 1) {
+        LOG_E("invalid boot header version: %d\r\n", header->version);
+        return;
+    }
+
+    if (header->sections != 3) {
+        LOG_E("invalid boot header sections: %d\r\n", header->sections);
+        return;
+    }
+
+    for (int i = 0; i < header->sections; i++) {
+        if (header->section[i].magic != 0x5c2381b2) {
+            LOG_E("invalid boot section magic: 0x%08x\r\n", header->section[i].magic);
+            continue;
+        }
+        LOG_I("Section %s(%d) - Start 0x%08x, Size %ld\r\n", get_sectionstr(header->section[i].type), header->section[i].type, BOOT_HDR_SRC_ADDR + header->section[i].offset, header->section[i].size);
+        switch (header->section[i].type) {
+            case VM_BOOT_SECTION_DTB:
+                LOG_I("Copying DTB to 0x%08x...\r\n", DTB_DST_ADDR);
+                memcpy((void *)DTB_DST_ADDR, (void *)(BOOT_HDR_SRC_ADDR + header->section[i].offset), header->section[i].size);
+                LOG_I("Done!\r\n");
+                break;
+            case VM_BOOT_SECTION_OPENSBI:
+                LOG_I("Copying OpenSBI to 0x%08x...\r\n", OPENSBI_DST_ADDR);
+                memcpy((void *)OPENSBI_DST_ADDR, (void *)(BOOT_HDR_SRC_ADDR + header->section[i].offset), header->section[i].size);
+                LOG_I("Done!\r\n");
+                break;
+            case VM_BOOT_SECTION_KERNEL:
+                LOG_I("Uncompressing Kernel to 0x%08x...\r\n", VM_LINUX_DST_ADDR);
+                unlz4((const void *)(BOOT_HDR_SRC_ADDR + header->section[i].offset), (void *)VM_LINUX_DST_ADDR, header->section[i].size);
+                LOG_I("Done!\r\n");
+                break;
+            default:
+                LOG_E("Unhandled Section %d\r\n", header->section[i].type);
+                return;
+        }
+        __DMB();
+        __ISB();    
+    }
+    LOG_I("CRC: %08x\r\n", header->crc);
+    csi_dcache_clean_invalid();
+
+    return;
+
+
+
     uint32_t *pSrc, *pDest;
     uint32_t header_kernel_len = 0;
     header_kernel_len = *(volatile uint32_t *)(VM_LINUX_SRC_ADDR - 4);
@@ -144,6 +238,8 @@ extern void bflb_uart_set_console(struct bflb_device_s *dev);
 
 int main(void)
 {
+    board_init();
+    LOG_I("");
     struct bflb_device_s *gpio;
 
     gpio = bflb_device_get_by_name("gpio");
@@ -166,14 +262,12 @@ int main(void)
     LOG_I("D0 start...\r\n");
     uint64_t start_time, stop_time;
 
-    CPU_MTimer_Delay_MS(100);
-
     void (*opensbi)(int hart_id, int fdt_addr) = (void (*)(int hart_id, int fdt_addr))OPENSBI_DST_ADDR;
 
     start_time = bflb_mtimer_get_time_us();
     linux_load();
     stop_time = bflb_mtimer_get_time_us();
-    LOG_I("\r\nload time: %ld us \r\n", (stop_time - start_time));
+    LOG_I("load time: %ld us \r\n", (stop_time - start_time));
 
     __ASM volatile("csrw mcor, %0"
                    :
