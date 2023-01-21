@@ -20,13 +20,15 @@ ENTRY(__start)
 StackSize    = 0x0400; /*  1KB */
 HeapMinSize  = 0x1000; /*  4KB */
 
+/* put everything in VRAM, so we can load opensbi into DRAM */
+
 MEMORY
 {
     xip_memory  (rx)  : ORIGIN = 0x58000000, LENGTH = 1M
-    itcm_memory (rx)  : ORIGIN = 0x3effc000, LENGTH = 17K
-    dtcm_memory (rx)  : ORIGIN = 0x3f000400, LENGTH = 4K
+    itcm_memory (rx)  : ORIGIN = 0x3F000000, LENGTH = 12K
+    dtcm_memory (rx)  : ORIGIN = 0x3F003000, LENGTH = 4K
     nocache_ram_memory (!rx) : ORIGIN = 0x3ef80000, LENGTH = 0K
-    ram_memory  (!rx) : ORIGIN = 0x3ef80000, LENGTH = 32K
+    ram_memory  (!rx) : ORIGIN = 0x3F004000, LENGTH = 16K
     xram_memory (!rx) : ORIGIN = 0x40000000, LENGTH = 16K
 }
 
