@@ -11,7 +11,6 @@ kconfig_lib_path = sys.path[0]+"/Kconfiglib"
 sys.path.append(kconfig_lib_path)
 
 import kconfiglib
-from menuconfig import menuconfig
 
 
 def _cmake_contents(kconfig, header):
@@ -147,6 +146,7 @@ if os.path.exists(args.projectdir + "/sdkconfig"):
 
 
 if args.menuconfig:
+    from menuconfig import menuconfig
     menuconfig(kconfig)
 
 write_config(kconfig)
