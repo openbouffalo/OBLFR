@@ -1,8 +1,12 @@
 #ifndef _BOARD_H
 #define _BOARD_H
 
+#include "bl808_board.h"
+
 void board_init(void);
 
+
+#if 0
 void board_jtag_gpio_init(void);
 void board_uartx_gpio_init(void);
 void board_i2c0_gpio_init(void);
@@ -22,5 +26,6 @@ void board_iso11898_gpio_init(void);
 #define DEFAULT_TEST_UART_DMA_RX_REQUEST DMA_REQUEST_UART1_RX
 #define DEFAULT_TEST_UART_DMA_TDR        DMA_ADDR_UART1_TDR
 #define DEFAULT_TEST_UART_DMA_RDR        DMA_ADDR_UART1_RDR
+#endif
 
 #endif

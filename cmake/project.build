@@ -21,11 +21,12 @@ sdkconfig:
 proj.conf: sdkconfig
 	@echo "Generating proj.conf from sdkconfig"
 	@${PINE64_SDK_PATH}/tools/kconfig/gensdkconfig.py --sdkpath ${PINE64_SDK_PATH} --cmake 1 --projectdir ${PWD} --env BFLB_BOARD_DIR=${BOARD_DIR} --env BFLB_BOARD=${BOARD} --env BFLB_CHIP=${CHIP} --env BFLB_CPU_ID=${CPU_ID}
-
 config:
 	@${PINE64_SDK_PATH}/tools/kconfig/gensdkconfig.py --sdkpath ${PINE64_SDK_PATH} --menuconfig 1 --cmake 1 --projectdir ${PWD} --env BFLB_BOARD_DIR=${BOARD_DIR} --env BFLB_BOARD=${BOARD} --env BFLB_CHIP=${CHIP} --env BFLB_CPU_ID=${CPU_ID}
 
 include $(BL_SDK_BASE)/project.build
 
+clean:: 
+	-@rm -f sdkconfig proj.conf || true
 
 

@@ -1,0 +1,67 @@
+comment "BL808 $(BFLB_CPU_ID) SOC"
+
+config CPU_M0
+	bool
+	default y if BFLB_CPU_ID = "m0"
+config CPU_D0
+	bool
+	default y if BFLB_CPU_ID = "d0"
+config CPU_LP
+	bool
+	default y if BFLB_CPU_ID = "lp"
+
+
+menu "M0 CPU Config"
+    visible if CPU_M0
+    menuconfig JTAG_DEBUG
+        bool "JTAG debug support"
+        help
+            This option enables JTAG debug module and pins.
+
+        if JTAG_DEBUG
+            choice
+                prompt "CPU To attach JTAG Debug Socket to"
+                default JTAG_DEBUG_M0
+                help
+                    Select the core to attach the JTAG Debug Socket to.
+                config JTAG_DEBUG_M0
+                    bool "Debug M0 Core"
+                config JTAG_DEBUG_D0
+                    bool "Debug D0 Core"
+                config JTAG_DEBUG_LP
+                    bool "Debug LP Core"
+            endchoice
+            choice
+                prompt "JTAG Debug Pins"
+                default JTAG_DEBUG_PINS_GRP0
+                help
+                    Select the JTAG Debug Pins to use.
+                config JTAG_DEBUG_PINS_GRP0
+                    bool "JTAG Debug Pins Group 0"
+                    default y if BOARD_OX64
+                    help
+                        JTAG Debug Pins are on:
+                        - JTAG_TMS on GPIO6
+                        - JTAG_TDO on GPIO7
+                        - JTAG_TCK on GPIO12
+                        - JTAG_TDI on GPIO13
+                        This is the default debug header on the OX64 board
+            endchoice
+        endif
+    menu "Pinmux"
+        menuconfig SDCARD
+        if BOARD_HAS_SDCARD
+            config PINMUX_ENABLE_SDH
+            bool "Enable SD Card Pinmux and Clock"
+            default y
+            help
+                Enable SD Card Pinmux and Clocks
+        endif
+    endmenu
+endmenu
+menu "D0 CPU Config"
+    visible if CPU_D0
+endmenu
+menu "LP CPU Config"
+    visible if CPU_LP
+endmenu

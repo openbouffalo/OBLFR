@@ -22,6 +22,8 @@ HeapMinSize  = 0x1000; /*  4KB */
 
 MEMORY
 {
+    fw_header_memory0  (rx)  : ORIGIN = 0x58000000 - 0x2000, LENGTH = 4K
+    fw_header_memory1  (rx)  : ORIGIN = 0x58000000 - 0x1000, LENGTH = 4K
     xip_memory  (rx)  : ORIGIN = 0x58000000, LENGTH = 32M
     itcm_memory (rx)  : ORIGIN = 0x62020000, LENGTH = 20K
     dtcm_memory (rx)  : ORIGIN = 0x62025000, LENGTH = 4K
@@ -32,6 +34,15 @@ MEMORY
 
 SECTIONS
 {
+    .fw_header0 :
+    {
+        KEEP(*(.fw_header0))
+    } > fw_header_memory0
+
+    .fw_header1 :
+    {
+        KEEP(*(.fw_header1))
+    } > fw_header_memory1
 
     .text :
     {
@@ -149,7 +160,9 @@ SECTIONS
 
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= __tcm_data_end__, "region RAM overflowed with stack")
+
     /*************************************************************************/
+
     __nocache_ram_load_addr = __dtcm_load_addr + SIZEOF(.dtcm_region);
 
     .nocache_ram_region  : AT (__nocache_ram_load_addr)
@@ -259,6 +272,43 @@ SECTIONS
 
     __HeapLimit = ORIGIN(ram_memory) + LENGTH(ram_memory);
     ASSERT(__HeapLimit - __HeapBase >= HeapMinSize, "heap region overflow")
+
+    .psmram_data (NOLOAD):
+    {
+        . = ALIGN(4);
+        __psram_data_start__ = .;
+
+        /*__end__ = .;*/
+        /*end = __end__;*/
+        KEEP(*(.psram_data*))
+
+        . = ALIGN(4);
+        __psram_data_end__ = .;
+    } > ram_code
+
+    .wifibss (NOLOAD) :
+    {
+      PROVIDE( __wifi_bss_start = ADDR(.wifibss) );
+      PROVIDE( __wifi_bss_end = ADDR(.wifibss) + SIZEOF(.wifibss) );
+      _sshram = . ;
+      *(SHAREDRAMIPC)
+      *(SHAREDRAM)
+      _eshram = . ;
+      *ipc_shared.o(COMMON)
+      *sdu_shared.o(COMMON)
+      *hal_desc.o(COMMON)
+      *txl_buffer_shared.o(COMMON)
+      *txl_frame_shared.o(COMMON)
+      *scan_shared.o(COMMON)
+      *scanu_shared.o(COMMON)
+      *mfp_bip.o(COMMON)
+      *me_mic.o(COMMON)
+      *(.wifi_ram*)
+      . = ALIGN(16);
+    } > ram_wifi
+
+    PROVIDE( _heap_wifi_start = . );
+    PROVIDE( _heap_wifi_size = ORIGIN(ram_wifi) + LENGTH(ram_wifi) - _heap_wifi_start );
 
 }
 
