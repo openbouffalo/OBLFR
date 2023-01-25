@@ -147,48 +147,10 @@ void console_init()
     bflb_uart_set_console(console);
 }
 
-#ifdef CONFIG_JTAG_DEBUG
-void jtag_init()
-{
-    /* setup JTAG */
-    struct bflb_device_s *gpio =  bflb_device_get_by_name("gpio");
-#if defined(CONFIG_JTAG_DEBUG_M0)
-    LOG_I("Enabling JTAG M0\r\n");
-    bflb_gpio_init(gpio, JTAG_TMS_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_M0);
-    bflb_gpio_init(gpio, JTAG_TDO_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_M0);
-    bflb_gpio_init(gpio, JTAG_TCK_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_M0);
-    bflb_gpio_init(gpio, JTAG_TDI_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_M0);
-#elif defined(CONFIG_JTAG_DEBUG_D0)
-    LOG_I("Enabling JTAG D0\r\n");
-    bflb_gpio_init(gpio, JTAG_TMS_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_D0);
-    bflb_gpio_init(gpio, JTAG_TDO_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_D0);
-    bflb_gpio_init(gpio, JTAG_TCK_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_D0);
-    bflb_gpio_init(gpio, JTAG_TDI_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_D0);
-#elif defined(CONFIG_JTAG_DEBUG_LP)
-    /* RM/DS says LP is 2 wire but not sure which pins so set them all */
-    LOG_I("Enabling JTAG LP - Warning - Untested!\r\n");
-    bflb_gpio_init(gpio, JTAG_TMS_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_LP);
-    bflb_gpio_init(gpio, JTAG_TDO_GPIOPIN, GPIO_ALTERNATE | GPIO_FUNC_JTAG_LP);
-    bflb_gpio_init(gpio, JTAG_TCK_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_LP);
-    bflb_gpio_init(gpio, JTAG_TDI_GPIOPIN,  GPIO_ALTERNATE | GPIO_FUNC_JTAG_LP);
-#else
-    #error "JTAG debug enabled but no core selected"
-#endif
-}
-#endif
 
 #if defined(CONFIG_PINMUX_ENABLE_SDH)
-void pinmux_enable_sdh() {    
-    struct bflb_device_s *gpio;
-
+void enable_sdh_periheral() {    
     LOG_D("Enabling SD Card\r\n");
-    gpio = bflb_device_get_by_name("gpio");
-    bflb_gpio_init(gpio, GPIO_PIN_0, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
-    bflb_gpio_init(gpio, GPIO_PIN_1, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
-    bflb_gpio_init(gpio, GPIO_PIN_2, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
-    bflb_gpio_init(gpio, GPIO_PIN_3, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
-    bflb_gpio_init(gpio, GPIO_PIN_4, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
-    bflb_gpio_init(gpio, GPIO_PIN_5, GPIO_FUNC_SDH | GPIO_ALTERNATE | GPIO_PULLUP | GPIO_SMT_EN | GPIO_DRV_2);
     PERIPHERAL_CLOCK_SDH_ENABLE();
     uint32_t tmp_val;
     tmp_val = BL_RD_REG(PDS_BASE, PDS_CTL5);
@@ -216,11 +178,8 @@ void bl808_cpu_init(void)
     peripheral_clock_init();
     bflb_irq_initialize();
     console_init();
-#ifdef CONFIG_JTAG_DEBUG
-    jtag_init();
-#endif    
 #if defined(CONFIG_PINMUX_ENABLE_SDH)
-    pinmux_enable_sdh();
+    enable_sdh_periheral();
 #endif
 
     size_t heap_len = ((size_t)&__HeapLimit - (size_t)&__HeapBase);
@@ -236,10 +195,6 @@ void bl808_cpu_init(void)
 
     LOG_I("dynamic memory init success,heap size = %d Kbyte \r\n", ((size_t)&__HeapLimit - (size_t)&__HeapBase) / 1024);
 
-
-#if (defined(CONFIG_LUA) || defined(CONFIG_BFLOG) || defined(CONFIG_FATFS))
-    rtc = bflb_device_get_by_name("rtc");
-#endif
 
 #ifdef CONFIG_PSRAM
     if (uhs_psram_init() < 0) {

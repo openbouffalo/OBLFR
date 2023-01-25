@@ -9,5 +9,5 @@ else()
 message(FATAL_ERROR "Unknown CPU")
 endif()
 
-
+sdk_set_linker_script(bl808_flash_${CPU_ID}.ld)
 

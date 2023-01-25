@@ -67,11 +67,32 @@ void bl_show_flashinfo(void)
     LOG_I("=====================================\r\n");
 }
 
-void board_common_init() {
-    /* call to the init function in either bl808_d0.c or bl808_m0.c */
-    bl808_cpu_init();
+void board_common_setup_pinmux(pinmux_setup_t *pinmux_setup, uint32_t len) {
+    uint32_t i;
+    struct bflb_device_s *gpio;
+    gpio = bflb_device_get_by_name("gpio");
+
+    for (i = 0; i < len; i++) {
+        uint32_t cfg;
+        if (pinmux_setup[i].mode & GPIO_ALTERNATE) {
+            cfg = pinmux_setup[i].mode | pinmux_setup[i].pull | pinmux_setup[i].drive | pinmux_setup[i].func;
+        } else {
+            cfg = pinmux_setup[i].mode | pinmux_setup[i].pull | pinmux_setup[i].drive;
+        }
+        bflb_gpio_init(gpio, pinmux_setup[i].pin, cfg);
+        LOG_D("pinmux_setup[%d] pin:%d, cfg:0x%08x\r\n", i, pinmux_setup[i].pin, cfg);
+    }
+    return;
 }
 
+void board_common_init(pinmux_setup_t *pinmux_setup, uint32_t len) {
+    /* call to the init function in either bl808_d0.c or bl808_m0.c */
+    bl808_cpu_init();
+    board_common_setup_pinmux(pinmux_setup, len);
+#if (defined(CONFIG_LUA) || defined(CONFIG_BFLOG) || defined(CONFIG_FATFS))
+    rtc = bflb_device_get_by_name("rtc");
+#endif    
+}
 
 
 #if 0

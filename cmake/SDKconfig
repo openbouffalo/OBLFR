@@ -1,5 +1,5 @@
 
-mainmenu "Pine64 OX64 SDK configuration"
+mainmenu "OpenBouffalo SDK configuration"
 config BFLB_CHIP
 	string
 	default "$(BFLB_CHIP)"
@@ -12,7 +12,7 @@ config BFLB_CPU_ID
 	string
 	default "$(BFLB_CPU_ID)"
 
-comment "Configuration for $(BFLB_CHIP) $(BFLB_CPU_ID)"
+comment "Configuration for $(BFLB_CHIP) $(BFLB_CPU_ID) ($(BFLB_BOARD))"
 
 menu "Application"
 	osource "Kconfig"
@@ -70,7 +70,6 @@ menu "SDK configuration"
 				Select the logging type to use.
 			config BFLOG
 				bool "Use BFLOG Implementation"
-				depends on SDK_BROKEN
 			config LOG
 				bool "Use Basic LOG_* Functions"
 			config LOG_DISABLE
