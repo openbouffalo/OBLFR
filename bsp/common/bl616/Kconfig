@@ -1,0 +1,9 @@
+comment "BL616 SOC"
+
+config CHIP_BL616
+    bool
+    default y if BFLB_CHIP_ID = "bl616"
+
+menu "BL616 CPU Config"
+endmenu
+

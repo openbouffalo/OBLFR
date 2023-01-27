@@ -1,0 +1,19 @@
+config BOARD_M0SDOCK
+    bool
+    default y if BFLB_BOARD = "m0sdock"
+
+comment "M0S Dock Options"
+
+menu "Pinmux Configuration"
+    config PINMUX_ENABLE_LED1
+        bool "Enable LED1 Pinmux"
+        default y
+        help
+            Enable LED1 Pinmux
+    config PINMUX_ENABLE_LED2
+        bool "Enable LED1 Pinmux"
+        default y
+        help
+            Enable LED1 Pinmux
+
+endmenu

@@ -19,8 +19,7 @@ menu "Application"
 endmenu
 
 menu "Board Support Configuration"
-	osource "$(BFLB_BOARD_DIR)/$(BFLB_BOARD)/Kconfig"
-	osource "$(BFLB_BOARD_DIR)/common/$(BFLB_CHIP)/Kconfig"
+	osource "$(BFLB_BOARD_DIR)/common/Kconfig"
 	
 	config PSRAM
 		bool "Enable PSRAM"

@@ -9,13 +9,6 @@ config BOARD_HAS_SDCARD
 comment "M1S Dock Options"
 
 menu "Pinmux Configuration"
-    config PINMUX_ENABLE_BTN_BOOT
-        bool "Enable Boot Button Pinmux"
-        default y
-        help
-            Enable Boot Button Pinmux
-            Note - You should ensure that the boot button is
-            held low during boot to avoid entering bootloader mode
     config PINMUX_ENABLE_BTN1
         bool "Enable Button1 Pinmux"
         default y
@@ -26,7 +19,6 @@ menu "Pinmux Configuration"
         default y
         help
             Enable Button2 Pinmux
-
     config PINMUX_ENABLE_LED1
         bool "Enable LED1 Pinmux"
         default y

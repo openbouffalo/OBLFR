@@ -1,11 +1,11 @@
 #include <bflb_gpio.h>
 #include <bflb_clock.h>
-#include "bl808_board.h"
+#include "bl808_bsp.h"
 #include "log.h"
 
 
 pinmux_setup_t pinmux_setup[] = {
-    COMMON_PINMUX_SETUP(),
+    COMMON_PINMUX_SETUP()
 };
 
 

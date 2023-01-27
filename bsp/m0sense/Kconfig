@@ -1,0 +1,28 @@
+config BOARD_M0SENSE
+    bool
+    default y if BFLB_BOARD = "m0sense"
+
+comment "M0Sense Options"
+
+menu "Pinmux Configuration"
+    config PINMUX_ENABLE_LED1
+        bool "Enable LED1 Pinmux (Red)"
+        default y
+        help
+            Enable LED1 Pinmux
+    config PINMUX_ENABLE_LED2
+        bool "Enable LED2 Pinmux (Green) - Currently Broken"
+        default n
+        help
+            Enable LED2 Pinmux. Currently Broken. Need to investigate.
+    config PINMUX_ENABLE_LED3
+        bool "Enable LED3 Pinmux (Blue)"
+        default y
+        help
+            Enable LED3 Pinmux
+    config PINMUX_ENABLE_BTN1
+        bool "Enable Boot Button"
+        default y
+        help
+            Enable Boot Button
+endmenu
