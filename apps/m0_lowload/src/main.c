@@ -74,7 +74,7 @@ void UART2_IRQHandler(int irq, void *arg)
 #ifdef CONFIG_LL_IRQFWD_USB
 void USB_IRQHandler(int irq, void *arg)
 {
-    LOG_D("Got USB IRQ\r\n")
+  LOG_D("Got USB IRQ\r\n");
     Send_IPC_IRQ(BLFB_IPC_DEVICE_USB);
 }
 #endif
