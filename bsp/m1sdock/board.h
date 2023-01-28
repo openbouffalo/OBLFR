@@ -1,7 +1,8 @@
 #ifndef _BOARD_H
 #define _BOARD_H
 
-#include "bl808_board.h"
+#include "bl808_bsp.h"
+#include "bflb_gpio.h"
 
 void board_init(void);
 
