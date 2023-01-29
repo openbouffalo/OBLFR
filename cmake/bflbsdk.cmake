@@ -41,7 +41,11 @@ if(BOARD_DIR)
     message(STATUS "BOARD_DIR: ${BOARD_DIR}")
 endif()
 
+include(proj.conf OPTIONAL RESULT_VARIABLE proj_conf_file)
+
+
 find_package(bouffalo_sdk REQUIRED HINTS $ENV{BL_SDK_BASE})
 include(${SDK_PATH}/cmake/kconfig.cmake)
 
 add_subdirectory(${SDK_PATH}/bsp/common/ bsp_common)
+#add_subdirectory(${SDK_PATH}/components/ components)
