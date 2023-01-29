@@ -123,6 +123,7 @@ for env in args.env:
 out_format = ["makefile", "header", "cmake"]
 os.environ["KCONFIG_CONFIG"] = args.projectdir + "/sdkconfig"
 os.environ["srctree"] = args.projectdir
+os.environ["OBLFR_SDK_PATH"] = args.sdkpath
 #print("Project Config File Path: " + os.environ["KCONFIG_CONFIG"])
 
 sdkconfig = args.sdkpath + "/cmake/SDKconfig"

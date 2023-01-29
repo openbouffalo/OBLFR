@@ -288,5 +288,5 @@ menu "SDK configuration"
 endmenu
 
 menu "Custom Components"
-	osource "${PINE64_SDK_PATH}/components/*/Kconfig"
+	osource "${OBLFR_SDK_PATH}/components/*/Kconfig"
 endmenu
