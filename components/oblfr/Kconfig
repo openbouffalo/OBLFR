@@ -1,0 +1,49 @@
+config COMPONENT_SYSTEM
+    bool "System Component"
+    default n
+    select FREERTOS
+    help
+        "System Component - Initializes FreeRTOS and any selected optional components"
+menu "System Configuration"
+    visible if COMPONENT_SYSTEM
+    config COMPONENT_SYSTEM_MAIN_TASK_STACK_SIZE
+        int "Main Task Stack Size"
+        default 4096
+        help
+            "Stack Size For the app_main task"
+    config COMPONENT_SYSTEM_MAIN_TASK_PRIORITY
+        int "Main Task Priority"
+        default 5
+        help
+            "Main Task Priority"
+    config COMPONENT_SYSTEM_DEFAULT_STACK_SIZE
+        int "Default Stack Size"
+        default 1024
+        help
+            "Default Stack Size"
+    config COMPONENT_SYSTEM_RUNTIME_STATS
+        bool "FreeRTOS RunTime Stats"
+        default y
+        help
+            "FreeRTOS RunTime Stats"
+    config COMPONENT_SYSTEM_TIMER_STACK_SIZE
+        int "FreeRTOS Timer Task Stack Size"
+        default 1024
+        help
+            "FreeRTOS Timer Task Stack Size. This is not the same as the oblfr_timer component"
+    choice 
+        prompt "Check Stack Overflow"
+        default COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_NONE
+        config COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_NONE
+            bool "None"
+        config COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_SIZE
+            bool "Check if the Stack Space has overflowed at Context Switches"
+        config COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_CANARY_GUARD
+            bool "Place 16 Canary Guard Bytes at top of stack and check at Context Switch" 
+    endchoice
+    config COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW
+        int
+        default 0 if COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_NONE
+        default 1 if COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_SIZE
+        default 2 if COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW_CANARY_GUARD
+endmenu

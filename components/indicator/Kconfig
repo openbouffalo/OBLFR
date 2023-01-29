@@ -1,0 +1,6 @@
+config COMPONENT_STATUS_LED
+    bool "Status Led Component"
+    default n
+    select COMPONENT_SYSTEM
+    help
+        "Status Led Component from esp-iot-solution modified for Bouffalo MCU SDK"
