@@ -201,7 +201,7 @@ static oblfr_button_dev_t *oblfr_button_create_com(uint8_t active_level, uint8_t
     g_head_handle = btn;
 
     if (false == g_is_timer_running) {
-        esp_timer_create_args_t oblfr_button_timer;
+        oblfr_timer_create_args_t oblfr_button_timer;
         oblfr_button_timer.arg = NULL;
         oblfr_button_timer.callback = oblfr_button_cb;
         oblfr_button_timer.name = "oblfr_button_timer";

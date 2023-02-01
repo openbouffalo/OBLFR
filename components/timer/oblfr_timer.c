@@ -208,7 +208,7 @@ oblfr_err_t oblfr_timer_deinit() {
     return OBLFR_OK;
 }
 
-oblfr_err_t oblfr_timer_create(const esp_timer_create_args_t* create_args, oblfr_timer_t* out_handle) {
+oblfr_err_t oblfr_timer_create(const oblfr_timer_create_args_t* create_args, oblfr_timer_t* out_handle) {
     if (create_args == NULL || create_args->callback == NULL || out_handle == NULL) {
         return OBLFR_ERR_INVALID;
     }

@@ -16,6 +16,7 @@
 #ifndef OBLFR_COMMON_H
 #define OBLFR_COMMON_H
 
+#include "sdkconfig.h"
 #include <assert.h>
 
 typedef enum {

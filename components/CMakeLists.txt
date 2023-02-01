@@ -1,4 +1,4 @@
-add_subdirectory(oblfr)
+sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_SYSTEM oblfr)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_BUTTON button)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_STATUS_LED indicator)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_TIMER timer)

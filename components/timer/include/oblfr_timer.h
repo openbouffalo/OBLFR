@@ -47,7 +47,7 @@ typedef struct {
     const char* name;               //!< Timer name, used in esp_timer_dump function
     oblfr_timer_cb_t callback;      //!< Function to call when timer expires
     void* arg;                      //!< Argument to pass to the callback
-} esp_timer_create_args_t;
+} oblfr_timer_create_args_t;
 
 /**
  * @brief Initialize the timer module
@@ -80,7 +80,7 @@ oblfr_err_t oblfr_timer_deinit();
  *        - OBLFR_ERR_INVALID: If create_args is NULL or out_handle is NULL or create_args->callback is NULL
  *        - OBLFR_ERR_NOMEM: If we are unable to allocate memory for the timer out_handle
  */
-oblfr_err_t oblfr_timer_create(const esp_timer_create_args_t* create_args,
+oblfr_err_t oblfr_timer_create(const oblfr_timer_create_args_t* create_args,
                            oblfr_timer_t* out_handle);
 
 /**

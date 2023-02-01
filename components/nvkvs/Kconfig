@@ -1,0 +1,26 @@
+config COMPONENT_NVKVS
+    bool "Non-Volatile Key-Value Storage Component"
+    default y
+    select COMPONENT_SYSTEM
+    help
+        Non-Volatile Key-Value Storage Component
+
+menu "NVKVS Configuration"
+    visible if COMPONENT_NVKVS
+    config COMPONENT_NVKVS_MEM_BACKEND
+        bool "Use memory backend"
+        default y
+        help
+            Use memory backend
+    config COMPONENT_NVKVS_FLASH_BACKEND
+        bool "Use flash backend"
+        default y
+        help
+            Use flash backend
+    config COMPONENT_NVKVS_MAX_STRING_SIZE
+        int "Maximum String Size that can be stored in NVKVS"
+        default 64
+        range 8 256
+        help
+            The Maximum String Size that can be stored in a Key
+endmenu

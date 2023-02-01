@@ -1,6 +1,8 @@
 #ifndef BSP_COMMON_H
 #define BSP_COMMON_H
 
+#include "sdkconfig.h"
+
 typedef struct  {
     uint32_t pin;
     uint32_t mode;

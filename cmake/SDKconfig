@@ -64,7 +64,7 @@ menu "SDK configuration"
 	menu "Logging Configuration"
 		choice LOG_TYPE
 			prompt "Logging Type"
-			default BFLOG
+			default LOG
 			help
 				Select the logging type to use.
 			config BFLOG

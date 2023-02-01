@@ -51,6 +51,7 @@ void bl_show_flashinfo(void)
     LOG_I("cread support  0x%02X\r\n", flashCfg.c_read_support);
     LOG_I("cread code     0x%02X\r\n", flashCfg.c_read_mode);
     LOG_I("burst wrap cmd 0x%02X\r\n", flashCfg.burst_wrap_cmd);
+    LOG_I("sector size:   0x%02X\r\n", flashCfg.sector_size);
     LOG_I("=====================================\r\n");
 }
 
