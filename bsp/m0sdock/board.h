@@ -3,6 +3,7 @@
 
 #include "bl616_bsp.h"
 #include "bsp_common.h"
+#include "sdkconfig.h"
 
 void board_init(void);
 

@@ -3,6 +3,7 @@
 
 #include "bl808_bsp.h"
 #include "bflb_gpio.h"
+#include "sdkconfig.h"
 
 void board_init(void);
 

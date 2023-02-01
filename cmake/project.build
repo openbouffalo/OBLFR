@@ -11,7 +11,6 @@ CROSS_COMPILE ?= riscv64-unknown-elf-
 default: proj.conf
 	@$(MAKE) build
 
-
 config: proj.conf
 	cd build && make config
 
@@ -22,11 +21,11 @@ proj.conf:
 include $(BL_SDK_BASE)/project.build
 
 distclean: clean
-	-@rm -rf sdkconfig || true
+	-@rm -rf build || true
+	-@rm -f sdkconfig || true
 
 clean: 
-	-@rm -rf build || true
 	-@rm -f proj.conf || true
 
 
-.PHONY:config clean distclean default 
+.PHONY:config clean default distclean

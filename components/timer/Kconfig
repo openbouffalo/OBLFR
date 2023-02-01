@@ -1,0 +1,10 @@
+config COMPONENT_TIMER
+    bool "Timer Component"
+    default n
+    select COMPONENT_SYSTEM
+    help
+        "Timer Component"
+menu "Timer Configuration"
+
+
+endmenu
