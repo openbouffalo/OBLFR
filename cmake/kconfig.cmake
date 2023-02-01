@@ -7,7 +7,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config/sdkconfig.h
                    COMMENT "Generating config/sdkconfig.h"
                    VERBATIM)
 
-target_sources(app PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/config/sdkconfig.h)
+target_sources(sdk_intf_lib PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/config/sdkconfig.h)
 
 sdk_add_include_directories(${CMAKE_CURRENT_BINARY_DIR}/config)
 

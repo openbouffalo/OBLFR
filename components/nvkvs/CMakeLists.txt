@@ -1,4 +1,4 @@
-sdk_generate_library()
+sdk_generate_library(oblfr_nvkvs)
 sdk_add_include_directories(include)
 sdk_add_include_directories(kved)
 sdk_library_add_sources(${CMAKE_CURRENT_SOURCE_DIR}/kved/kved.c
