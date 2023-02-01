@@ -1137,8 +1137,6 @@ static kved_error_t kved_data_consistency_check(kved_ctrl_t *ctrl)
 				}
 			}
 		}
-		vTaskDelay(10);
-
 	}
 	LOG_T("Done\r\n");
 	return KVED_OK;

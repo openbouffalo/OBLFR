@@ -1,6 +1,6 @@
 config COMPONENT_NVKVS
     bool "Non-Volatile Key-Value Storage Component"
-    default y
+    default n
     select COMPONENT_SYSTEM
     help
         Non-Volatile Key-Value Storage Component
