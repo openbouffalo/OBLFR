@@ -4,6 +4,7 @@
 #include "bl808_bsp.h"
 #include "sdkconfig.h"
 
+
 void board_init(void);
 
 #endif

@@ -5,7 +5,6 @@
 #include "bsp_common.h"
 #include "sdkconfig.h"
 
-
 void board_init(void);
 
 #ifdef CONFIG_PINMUX_ENABLE_LED1

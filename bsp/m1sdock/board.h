@@ -5,7 +5,6 @@
 #include "bflb_gpio.h"
 #include "sdkconfig.h"
 
-
 void board_init(void);
 
 #ifdef CONFIG_PINMUX_ENABLE_LED1
