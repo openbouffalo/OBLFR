@@ -1,0 +1,27 @@
+config BOARD_M1SDOCK
+    bool
+    default y if BFLB_BOARD = "m1sdock"
+
+config BOARD_HAS_SDCARD
+    bool
+    default y if BFLB_BOARD = "m1sdock"
+
+comment "M1S Dock Options"
+
+menu "Pinmux Configuration"
+    config PINMUX_ENABLE_BTN1
+        bool "Enable Button1 Pinmux"
+        default y
+        help
+            Enable Button1 Pinmux
+    config PINMUX_ENABLE_BTN2
+        bool "Enable Button2 Pinmux"
+        default y
+        help
+            Enable Button2 Pinmux
+    config PINMUX_ENABLE_LED1
+        bool "Enable LED1 Pinmux"
+        default y
+        help
+            Enable LED1 Pinmux
+endmenu

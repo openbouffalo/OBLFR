@@ -1,31 +1,32 @@
-BL_SDK_BASE ?= ${PINE64_SDK_PATH}/../bl_mcu_sdk
+BL_SDK_BASE ?= ${OBLFR_SDK_PATH}/../bl_mcu_sdk
 
 export BL_SDK_BASE
 
-CHIP ?= bl808
+
 BOARD ?= ox64
-CPU_ID ?= m0
-BOARD_DIR ?= ${PINE64_SDK_PATH}/bsp
 
+BOARD_DIR ?= ${OBLFR_SDK_PATH}/bsp
 CROSS_COMPILE ?= riscv64-unknown-elf-
-
-.PHONY:config
 
 default: proj.conf
 	@$(MAKE) build
 
-sdkconfig:
-	@echo "Generating sdkconfig from sdkconfig.default"
-	@${PINE64_SDK_PATH}/tools/kconfig/gensdkconfig.py --sdkpath ${PINE64_SDK_PATH} --projectdir ${PWD} --env BFLB_BOARD_DIR=${BOARD_DIR} --env BFLB_BOARD=${BOARD} --env BFLB_CHIP=${CHIP} --env BFLB_CPU_ID=${CPU_ID}
 
-proj.conf: sdkconfig
-	@echo "Generating proj.conf from sdkconfig"
-	@${PINE64_SDK_PATH}/tools/kconfig/gensdkconfig.py --sdkpath ${PINE64_SDK_PATH} --cmake 1 --projectdir ${PWD} --env BFLB_BOARD_DIR=${BOARD_DIR} --env BFLB_BOARD=${BOARD} --env BFLB_CHIP=${CHIP} --env BFLB_CPU_ID=${CPU_ID}
+config: proj.conf
+	cd build && make config
 
-config:
-	@${PINE64_SDK_PATH}/tools/kconfig/gensdkconfig.py --sdkpath ${PINE64_SDK_PATH} --menuconfig 1 --cmake 1 --projectdir ${PWD} --env BFLB_BOARD_DIR=${BOARD_DIR} --env BFLB_BOARD=${BOARD} --env BFLB_CHIP=${CHIP} --env BFLB_CPU_ID=${CPU_ID}
+proj.conf:
+	$(CMAKE) -S . -B build -G $(cmake_generator) $(cmake_definition)
+	cd build && make proj.conf
 
 include $(BL_SDK_BASE)/project.build
 
+distclean: clean
+	-@rm -rf sdkconfig || true
+
+clean: 
+	-@rm -rf build || true
+	-@rm -f proj.conf || true
 
 
+.PHONY:config clean distclean default 

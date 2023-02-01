@@ -1,7 +1,7 @@
 /****************************************************************************************
-* @file flash.ld
+* @file bl702_flash.ld
 *
-* @brief This file is the link script file (gnuarm or armgcc).
+* @brief This file is the map file (gnuarm or armgcc).
 *
 * Copyright (C) BouffaloLab 2021
 *
@@ -11,28 +11,28 @@
 /* configure the CPU type */
 OUTPUT_ARCH( "riscv" )
 /* link with the standard c library */
-INPUT(-lc)
+/* INPUT(-lc) */
 /* link with the standard GCC library */
-INPUT(-lgcc)
+/* INPUT(-lgcc) */
 /* configure the entry point */
 ENTRY(__start)
 
-StackSize    = 0x0400; /*  1KB */
-HeapMinSize  = 0x1000; /*  4KB */
+StackSize = 0x1000; /*  4KB */
 
 MEMORY
 {
-    fw_header_memory  (rx)  : ORIGIN = 0x58000000 - 0x1000, LENGTH = 4K
-    xip_memory  (rx)  : ORIGIN = 0x58000000, LENGTH = 32M
-    itcm_memory (rx)  : ORIGIN = 0x62020000, LENGTH = 20K
-    dtcm_memory (rx)  : ORIGIN = 0x62025000, LENGTH = 4K
-    nocache_ram_memory (!rx) : ORIGIN = 0x22026000, LENGTH = 40K
-    ram_memory  (!rx) : ORIGIN = 0x62030000, LENGTH = 160K + 64K - 20K - 4K - 40K
-    xram_memory  (!rx) : ORIGIN = 0x40000000, LENGTH = 16K
+    fw_header_memory  (rx)  : ORIGIN = 0x23000000 - 0x1000, LENGTH = 4K
+    xip_memory  (rx)  : ORIGIN = 0x23000000, LENGTH = 1024K
+    itcm_memory (rx)  : ORIGIN = 0x22014000, LENGTH = 12K
+    dtcm_memory (rx)  : ORIGIN = 0x42017000, LENGTH = 4K
+    ram_memory  (!rx) : ORIGIN = 0x42018000, LENGTH = 96K
+    hbn_memory  (rx)  : ORIGIN = 0x40010000, LENGTH = 0xE00     /* hbn ram 4K used 3.5K*/
 }
 
 SECTIONS
 {
+    PROVIDE(__metal_chicken_bit = 0);
+
     .fw_header :
     {
         KEEP(*(.fw_header))
@@ -60,28 +60,19 @@ SECTIONS
         KEEP(*(VSymTab))
         __vsymtab_end = .;
 
-        /* section information for usb usbh_class_info */
-        . = ALIGN(4);
-        __usbh_class_info_start__ = .;
-        KEEP(*(.usbh_class_info))
-        . = ALIGN(4);
-        __usbh_class_info_end__ = .;
-
         /*put .rodata**/
-        *(EXCLUDE_FILE( *bl808_glb*.o* \
-                        *bl808_glb_gpio*.o* \
-                        *bl808_pds*.o* \
-                        *bl808_aon*.o* \
-                        *bl808_hbn*.o* \
-                        *bl808_l1c*.o* \
-                        *bl808_common*.o* \
-                        *bl808_clock*.o* \
-                        *bl808_ef_ctrl*.o* \
-                        *bl808_sf_cfg*.o* \
-                        *bl808_sf_ctrl*.o* \
-                        *bl808_sflash*.o* \
-                        *bl808_xip_sflash*.o* \
-                        *bl808_romapi_patch*.o* ) .rodata*)
+        *(EXCLUDE_FILE( *bl702_glb*.o* \
+                        *bl702_pds*.o* \
+                        *bl702_common*.o* \
+                        *bl702_sf_cfg*.o* \
+                        *bl702_sf_cfg_ext*.o* \
+                        *bl702_sf_ctrl*.o* \
+                        *bl702_sflash*.o* \
+                        *bl702_sflash_ext*.o* \
+                        *bl702_xip_sflash*.o* \
+                        *bl702_xip_sflash_ext*.o* \
+                        *bl702_ef_ctrl*.o*) .rodata*)
+
         *(.srodata)
         *(.srodata.*)
 
@@ -102,26 +93,36 @@ SECTIONS
         *(.sclock_rlt_code.*)
         *(.sclock_rlt_const.*)
 
-        *bl808_glb*.o*(.rodata*)
-        *bl808_glb_gpio*.o*(.rodata*)
-        *bl808_pds*.o*(.rodata*)
-        *bl808_aon*.o*(.rodata*)
-        *bl808_hbn*.o*(.rodata*)
-        *bl808_l1c*.o*(.rodata*)
-        *bl808_common*.o*(.rodata*)
-        *bl808_clock*.o*(.rodata*)
-        *bl808_ef_ctrl*.o*(.rodata*)
-        *bl808_sf_cfg*.o*(.rodata*)
-        *bl808_sf_ctrl*.o*(.rodata*)
-        *bl808_sflash*.o*(.rodata*)
-        *bl808_xip_sflash*.o*(.rodata*)
-        *bl808_romapi_patch*.o*(.rodata*)
+        *bl702_glb*.o*(.rodata*)
+        *bl702_pds*.o*(.rodata*)
+        *bl702_common*.o*(.rodata*)
+        *bl702_sf_cfg*.o*(.rodata*)
+        *bl702_sf_cfg_ext*.o*(.rodata*)
+        *bl702_sf_ctrl*.o*(.rodata*)
+        *bl702_sflash*.o*(.rodata*)
+        *bl702_sflash_ext*.o*(.rodata*)
+        *bl702_xip_sflash*.o*(.rodata*)
+        *bl702_xip_sflash_ext*.o*(.rodata*)
+        *bl702_ef_ctrl*.o*(.rodata*)
 
         . = ALIGN(4);
         __tcm_code_end__ = .;
     } > itcm_memory
 
-    __dtcm_load_addr = __itcm_load_addr + SIZEOF(.itcm_region);
+    __hbn_load_addr = __itcm_load_addr + SIZEOF(.itcm_region);
+
+    .hbn_ram_region : AT (__hbn_load_addr)
+    {
+        . = ALIGN(4);
+        __hbn_ram_start__ = .;
+        *bl702_hbn_wakeup*.o*(.rodata*)
+        *(.hbn_ram_code*)
+        *(.hbn_ram_data)
+        . = ALIGN(4);
+        __hbn_ram_end__ = .;
+    } > hbn_memory
+
+    __dtcm_load_addr = __hbn_load_addr + SIZEOF(.hbn_ram_region);
 
     .dtcm_region : AT (__dtcm_load_addr)
     {
@@ -155,20 +156,8 @@ SECTIONS
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= __tcm_data_end__, "region RAM overflowed with stack")
     /*************************************************************************/
-    __nocache_ram_load_addr = __dtcm_load_addr + SIZEOF(.dtcm_region);
 
-    .nocache_ram_region  : AT (__nocache_ram_load_addr)
-    {
-        . = ALIGN(4);
-        __nocache_ram_data_start__ = .;
-
-        *(.nocache_ram)
-
-        . = ALIGN(4);
-        __nocache_ram_data_end__ = .;
-    } > nocache_ram_memory
-
-    __system_ram_load_addr = __nocache_ram_load_addr + SIZEOF(.nocache_ram_region);
+    __system_ram_load_addr = __dtcm_load_addr + SIZEOF(.dtcm_region);
 
     .system_ram_data_region : AT (__system_ram_load_addr)
     {
@@ -176,17 +165,10 @@ SECTIONS
         __system_ram_data_start__ = .;
 
         *(.system_ram)
+        *(.nocache_ram)
 
         . = ALIGN(4);
         __system_ram_data_end__ = .;
-    } > ram_memory
-
-    .system_ram_noinit_data_region (NOLOAD) :
-    {
-        . = ALIGN(4);
-        *(.system_ram_noinit)
-
-        . = ALIGN(4);
     } > ram_memory
 
     __ram_load_addr = __system_ram_load_addr + SIZEOF(.system_ram_data_region);
@@ -214,9 +196,6 @@ SECTIONS
         __ram_data_end__ = .;
     } > ram_memory
 
-    __etext_final = (__ram_load_addr + SIZEOF (RAM_DATA));
-    ASSERT(__etext_final <= ORIGIN(xip_memory) + LENGTH(xip_memory), "code memory overflow")
-
     .bss (NOLOAD) :
     {
         . = ALIGN(4);
@@ -241,33 +220,21 @@ SECTIONS
         __noinit_data_end__ = .;
     } > ram_memory
 
-    .nocache_noinit_ram_region (NOLOAD) :
-    {
-        . = ALIGN(4);
-        __nocache_noinit_ram_data_start__ = .;
-
-        *(.nocache_noinit_ram)
-        *(.noncacheable)
-
-        . = ALIGN(4);
-        __nocache_noinit_ram_data_end__ = .;
-    } > nocache_ram_memory
-
     .heap (NOLOAD):
     {
         . = ALIGN(4);
         __HeapBase = .;
 
-        /*__end__ = .;*/
-        /*end = __end__;*/
         KEEP(*(.heap*))
 
         . = ALIGN(4);
         __HeapLimit = .;
     } > ram_memory
 
+    PROVIDE (__heap_min_size = 0x400);
     __HeapLimit = ORIGIN(ram_memory) + LENGTH(ram_memory);
-    ASSERT(__HeapLimit - __HeapBase >= HeapMinSize, "heap region overflow")
+
+    ASSERT((__HeapLimit -  __HeapBase ) >= __heap_min_size, "heap size is too short.")
 
 }
 

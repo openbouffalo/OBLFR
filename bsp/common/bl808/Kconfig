@@ -1,0 +1,35 @@
+comment "BL808 $(BFLB_CPU_ID) SOC"
+
+config CHIP_BL808
+    bool
+    default y if BFLB_CHIP = "bl808"
+
+config CPU_M0
+	bool
+	default y if BFLB_CPU_ID = "m0"
+config CPU_D0
+	bool
+	default y if BFLB_CPU_ID = "d0"
+config CPU_LP
+	bool
+	default y if BFLB_CPU_ID = "lp"
+
+
+menu "M0 CPU Config"
+    visible if CPU_M0
+    menu "Pinmux"
+        if BOARD_HAS_SDCARD
+            config PINMUX_ENABLE_SDH
+                bool "Enable SD Card Pinmux and Clock"
+                default y
+                help
+                    Enable SD Card Pinmux and Clocks
+        endif
+    endmenu
+endmenu
+menu "D0 CPU Config"
+    visible if CPU_D0
+endmenu
+menu "LP CPU Config"
+    visible if CPU_LP
+endmenu

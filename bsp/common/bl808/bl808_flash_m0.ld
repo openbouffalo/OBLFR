@@ -22,22 +22,27 @@ HeapMinSize  = 0x1000; /*  4KB */
 
 MEMORY
 {
-    fw_header_memory  (rx)  : ORIGIN = 0x58000000 - 0x1000, LENGTH = 4K
+    fw_header_memory0  (rx)  : ORIGIN = 0x58000000 - 0x2000, LENGTH = 4K
+    fw_header_memory1  (rx)  : ORIGIN = 0x58000000 - 0x1000, LENGTH = 4K
     xip_memory  (rx)  : ORIGIN = 0x58000000, LENGTH = 32M
-    itcm_memory (rx)  : ORIGIN = 0x3eff0000, LENGTH = 28K
-    dtcm_memory (rx)  : ORIGIN = 0x3eff7000, LENGTH = 4K
-    nocache_ram_memory (!rx) : ORIGIN = 0x3eff8000, LENGTH = 0K
-    ram_memory  (!rx) : ORIGIN = 0x3eff8000, LENGTH = 32K + 32K
-    xram_memory (!rx) : ORIGIN = 0x40004000, LENGTH = 16K
+    itcm_memory (rx)  : ORIGIN = 0x62020000, LENGTH = 20K
+    dtcm_memory (rx)  : ORIGIN = 0x62025000, LENGTH = 4K
+    nocache_ram_memory (!rx) : ORIGIN = 0x22026000, LENGTH = 40K
+    ram_memory  (!rx) : ORIGIN = 0x62030000, LENGTH = 160K + 64K - 20K - 4K - 40K
+    xram_memory  (!rx) : ORIGIN = 0x40000000, LENGTH = 16K
 }
 
 SECTIONS
 {
-    .fw_header :
+    .fw_header0 :
     {
-        KEEP(*(.fw_header))
-    } > fw_header_memory
+        KEEP(*(.fw_header0))
+    } > fw_header_memory0
 
+    .fw_header1 :
+    {
+        KEEP(*(.fw_header1))
+    } > fw_header_memory1
 
     .text :
     {
@@ -45,12 +50,13 @@ SECTIONS
         __text_code_start__ = .;
 
         KEEP (*(SORT_NONE(.init)))
+        KEEP (*(SORT_NONE(.vector)))
 
         *(.text)
         *(.text.*)
 
         /* section information for shell */
-        . = ALIGN(8);
+        . = ALIGN(4);
         __fsymtab_start = .;
         KEEP(*(FSymTab))
         __fsymtab_end = .;
@@ -59,6 +65,13 @@ SECTIONS
         __vsymtab_start = .;
         KEEP(*(VSymTab))
         __vsymtab_end = .;
+
+        /* section information for usb usbh_class_info */
+        . = ALIGN(4);
+        __usbh_class_info_start__ = .;
+        KEEP(*(.usbh_class_info))
+        . = ALIGN(4);
+        __usbh_class_info_end__ = .;
 
         /*put .rodata**/
         *(EXCLUDE_FILE( *bl808_glb*.o* \
@@ -75,7 +88,6 @@ SECTIONS
                         *bl808_sflash*.o* \
                         *bl808_xip_sflash*.o* \
                         *bl808_romapi_patch*.o* ) .rodata*)
-
         *(.srodata)
         *(.srodata.*)
 
@@ -148,10 +160,12 @@ SECTIONS
 
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= __tcm_data_end__, "region RAM overflowed with stack")
+
     /*************************************************************************/
+
     __nocache_ram_load_addr = __dtcm_load_addr + SIZEOF(.dtcm_region);
 
-    .nocache_ram_region (NOLOAD) : AT (__nocache_ram_load_addr)
+    .nocache_ram_region  : AT (__nocache_ram_load_addr)
     {
         . = ALIGN(4);
         __nocache_ram_data_start__ = .;
@@ -238,12 +252,13 @@ SECTIONS
     .nocache_noinit_ram_region (NOLOAD) :
     {
         . = ALIGN(4);
-        __nocache_ram_data_start__ = .;
+        __nocache_noinit_ram_data_start__ = .;
 
         *(.nocache_noinit_ram)
+        *(.noncacheable)
 
         . = ALIGN(4);
-        __nocache_ram_data_end__ = .;
+        __nocache_noinit_ram_data_end__ = .;
     } > nocache_ram_memory
 
     .heap (NOLOAD):

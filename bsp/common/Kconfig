@@ -1,0 +1,60 @@
+osource "$(BFLB_BOARD_DIR)/$(BFLB_BOARD)/Kconfig"
+osource "$(BFLB_BOARD_DIR)/common/$(BFLB_CHIP)/Kconfig"
+comment "Generic BSP Config"
+menuconfig JTAG_DEBUG
+    bool "JTAG debug support"
+    help
+        This option enables JTAG debug module and pins.
+
+    if JTAG_DEBUG
+        if CHIP_BL808
+            choice
+                prompt "CPU To attach JTAG Debug Socket to"
+                default JTAG_DEBUG_M0
+                help
+                    Select the core to attach the JTAG Debug Socket to.
+                config JTAG_DEBUG_M0
+                    bool "Debug M0 Core"
+                config JTAG_DEBUG_D0
+                    bool "Debug D0 Core"
+                config JTAG_DEBUG_LP
+                    bool "Debug LP Core"
+            endchoice
+        endif
+        choice
+            prompt "JTAG Debug Pins"
+            default JTAG_DEBUG_PINS_GRP0 if BOARD_OX64
+            default JTAG_DEBUG_PINS_GRP1 if BOARD_M1S_DOCK
+            help
+                Select the JTAG Debug Pins to use.
+            config JTAG_DEBUG_PINS_GRP0
+                bool "JTAG Debug Pins Group 0"
+                help
+                    JTAG Debug Pins are on:
+                    - JTAG_TMS on GPIO6
+                    - JTAG_TDO on GPIO7
+                    - JTAG_TCK on GPIO12
+                    - JTAG_TDI on GPIO13
+                    This is the default debug header on the OX64 board
+
+            config JTAG_DEBUG_PINS_GRP1
+                bool "JTAG Debug Pins Group 1"
+                help
+                    JTAG Debug Pins are on:
+                    - JTAG_TMS on GPIO0
+                    - JTAG_TDO on GPIO1
+                    - JTAG_TCK on GPIO2
+                    - JTAG_TDI on GPIO3
+                    This configuration is used on the M1S Dock board
+                    with the tf2jtag adapter board. 
+        endchoice
+    endif
+menu "Pinmux"
+    if BOARD_HAS_SDCARD
+        config PINMUX_ENABLE_SDH
+            bool "Enable SD Card Pinmux and Clock"
+            default y
+            help
+                Enable SD Card Pinmux and Clocks
+    endif
+endmenu

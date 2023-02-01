@@ -1,0 +1,9 @@
+comment "BL702 SOC"
+
+config CHIP_BL708
+    bool
+    default y if BFLB_CHIP_ID = "bl702"
+
+menu "BL702 CPU Config"
+endmenu
+

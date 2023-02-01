@@ -1,53 +1,64 @@
 
-mainmenu "Pine64 OX64 SDK configuration"
+mainmenu "OpenBouffalo SDK configuration"
+config BFLB_CHIP
+	string
+	default "$(BFLB_CHIP)"
+
+config BFLB_BOARD
+	string
+	default "$(BFLB_BOARD)"
+
+config BFLB_CPU_ID
+	string
+	default "$(BFLB_CPU_ID)"
+
+comment "Configuration for $(BFLB_CHIP) $(BFLB_CPU_ID) ($(BFLB_BOARD))"
 
 menu "Application"
 	osource "Kconfig"
 endmenu
 
 menu "Board Support Configuration"
-	menu "$(BFLB_BOARD) Board Config"
-		source "$(BFLB_BOARD_DIR)/$(BFLB_BOARD)/Kconfig"
-	endmenu
-
+	osource "$(BFLB_BOARD_DIR)/common/Kconfig"
+	
 	config PSRAM
 		bool "Enable PSRAM"
 		default y
 
 	config ETHERNET
-		bool "Enable Ethernet"
+		bool "Enable Ethernet SDK Driver"
 		default n
 	
 	config BSP_SDH_SDCARD
-		bool "Enable SD SDHCI Driver Support"
-		default n
-
-	config BSP_SPI_SDCARD
-		bool "Enable SD SPI Driver Support"
+		bool "Enable SD SDHCI SDK Driver"
+		depends on BOARD_HAS_SDCARD
+		select PINMUX_ENABLE_SDH
 		default n
 	
 	config BSP_LCD
-		bool "Enable LCD Driver Support"
+		bool "Enable LCD SDK Driver"
+		default n
+
+	config BSP_TOUCH
+		bool "Enable Touch SDK Driver"
 		default n
 
 	config BSP_IMAGE_SENSOR
-		bool "Enable Image Sensor Driver Support"
+		bool "Enable Image Sensor SDK"
 		default n
+	
+	config BSP_CSI
+		bool "Enable CSI SDK Driver"
+		default n
+		depends on BSP_IMAGE_SENSOR
+
 endmenu
 
 menu "CPU Configuration"
-	config BFLB_CHIP
-		string
-		default "$(BFLB_CHIP)"
-	config BLFB_CPU_ID
-		string
-		default "$(BFLB_CPU_ID)"
-	
 	config ROMAPI
 		bool "Enable ROM API"
 		default y
 endmenu
-
 
 menu "SDK configuration"
 	menu "Logging Configuration"
@@ -58,7 +69,6 @@ menu "SDK configuration"
 				Select the logging type to use.
 			config BFLOG
 				bool "Use BFLOG Implementation"
-				depends on SDK_BROKEN
 			config LOG
 				bool "Use Basic LOG_* Functions"
 			config LOG_DISABLE
@@ -278,5 +288,5 @@ menu "SDK configuration"
 endmenu
 
 menu "Custom Components"
-	osource "${PINE64_SDK_PATH}/components/*/Kconfig"
+	osource "${OBLFR_SDK_PATH}/components/*/Kconfig"
 endmenu
