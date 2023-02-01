@@ -1,11 +1,11 @@
-BL_SDK_BASE ?= ${PINE64_SDK_PATH}/../bl_mcu_sdk
+BL_SDK_BASE ?= ${OBLFR_SDK_PATH}/../bl_mcu_sdk
 
 export BL_SDK_BASE
 
 
 BOARD ?= ox64
 
-BOARD_DIR ?= ${PINE64_SDK_PATH}/bsp
+BOARD_DIR ?= ${OBLFR_SDK_PATH}/bsp
 CROSS_COMPILE ?= riscv64-unknown-elf-
 
 default: proj.conf
