@@ -4,21 +4,26 @@ This is a collection of Firmware/Example Applications for the Bouffalo Range of 
 
 
 ## Quick Start
-For Pine64 OX64 Dev Board:
+For Bouffallo based boards:
 ```
-mkdir obfr && cd obfr
-git clone https://github.com/XXX
+git clone https://github.com/openbouffalo/OBLFR.git
 git clone https://github.com/bouffalolab/bl_mcu_sdk.git
 git clone git@gitee.com:bouffalolab/toolchain_gcc_t-head_linux.git
 PATH=$PATH:<directory to toolchain_gcc_t-head_linux>/bin/
-cd XXX/apps/helloworld
+cd OBLFR/apps/helloworld
 make
 ```
 Then use BLDevCube to Flash the build/build_out/helloworld_m0.elf to your device
 
+if your bl_mcu_sdk is located in a different path, then the following will work:
+
+```BL_SDK_BASE=<path> make```
+
 ## Directory Layout
 * apps/
 	* Applications
+* apps/examples/
+	* Example Applications showing how to use included components
 * components/
 	* Useful Libraries ported to the Boufallo Range of Chips
 * cmake/
@@ -36,8 +41,11 @@ Then use BLDevCube to Flash the build/build_out/helloworld_m0.elf to your device
 
 ## Configuring SDK Features
 
-The Bouffalo SDK provides numerous configuration options, enabled via the proj.conf in a standard bl_mcu_sdk project. This repository has enabled menuconfig, to give a graphical interface to enable/disable features in the SDK. You can enter the configuration dialog by running
-```make config``` in each applications directory. 
+The Bouffalo SDK provides numerous configuration options, enabled via the proj.conf in a standard bl_mcu_sdk project. This repository has enabled menuconfig, to give a graphical interface to enable/disable features in the SDK. You can enter the configuration dialog by running in each applications directory: 
+```
+make config
+``` 
+
 
 Default Configuration Options for a application are saved in ```sdkconfig.default```, and when a project is built, a ```sdkconfig``` is created (and may be edited by hand, or updated with ```make config```). 
 ```build/config/sdkconfig.h``` header file is also created when compiling, and any configuration options that affect cmake are placed into ```proj.conf```
@@ -50,9 +58,16 @@ If a Application has a specific configuration options, a ```Kconfig``` file can 
 
 This SDK still respects the following commands to specify different CPU's/cores etc:
 ```
-make  CHIP=chip_name  BOARD=board_name CPU_ID=d0
+make BOARD=board_name
 ```
-Please ensure you run ```make clean``` and remove the sdkconfig file if you change chips/boards or CPU's
+For the BL808, you can specify the following cores:
+``` 
+BOARD=ox64  CHIP_ID=m0 make
+```
+
+A list of boards can be found in [cmake/bflbsdk.cmake](cmake/bflbsdk.cmake) under the ```set(BOARD_LIST``` section
+
+Please ensure you run ```make distclean``` if you change chips/boards or CPU's
 
 ## Specify Location of the Bouffalo Labs MCU SDK
 
@@ -60,5 +75,12 @@ If your bl_mcu_sdk located in different path, then the following will work:
 ```BL_SDK_BASE=<path> make```
 
 ## Board Support
-We have started to write a board support package for the Pine64 OX64 in bsp/ox64. This is WIP. Other Boards are welcome
+
+We currently have the following boards supported:
+* Pine64 OX64 (bl808)
+* Sispeed M1SDock (bl808)
+* Sispeed M0SDock (bl616)
+* Sispeed M0Sense (bl702)
+
+Other Boards are welcome, please submit a PR with your board support package!
 
