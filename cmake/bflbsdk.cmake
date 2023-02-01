@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
+include(proj.conf OPTIONAL RESULT_VARIABLE proj_conf_file)
+
 if(CONFIG_BFLB_BOARD)
     set(BOARD ${CONFIG_BFLB_BOARD})
 endif()
@@ -40,8 +42,6 @@ endif()
 if(BOARD_DIR)
     message(STATUS "BOARD_DIR: ${BOARD_DIR}")
 endif()
-
-include(proj.conf OPTIONAL RESULT_VARIABLE proj_conf_file)
 
 
 find_package(bouffalo_sdk REQUIRED HINTS $ENV{BL_SDK_BASE})
