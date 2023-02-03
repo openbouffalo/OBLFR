@@ -1,0 +1,44 @@
+config COMPONENT_MAILBOX
+    bool "Mailbox Support for Linux"
+    default y
+    help
+        Mailbox Component forwards IRQ's to the D0 core for Linux
+        support. Enable this component if you are running linux on 
+        the D0 core.
+
+        Please see the README.md file in the Mailbox component directory
+        for more information
+
+menu "Mailbox Configuration"
+    visible if COMPONENT_MAILBOX
+    config COMPONENT_MAILBOX_IRQFWD_SDH
+	bool "Enable IRQ forwarding for SDH"
+	default y
+
+config COMPONENT_MAILBOX_IRQFWD_UART2
+	bool "Enable IRQ forwarding for UART2"
+	default n
+    help
+        Enable if you wish to use UART2 for linux
+
+config COMPONENT_MAILBOX_IRQFWD_USB
+	bool "Enable IRQ forwarding for USB"
+	default n
+    help
+        Curently disabled as USB is not working
+
+config COMPONENT_MAILBOX_IRQFWD_GPIO
+    bool "Enable IRQ forwarding for GPIO"
+    default y
+    help
+        enable if you need Interupt Support for GPIO on Linux
+        
+config COMPONENT_MAILBOX_IRQFWD_EMAC
+    bool "Enable IRQ forwarding for Ethernet"
+    default y if BOARD_M1SDOCK
+    default n
+    help
+        enable if you need Interupt Support for Ethernet on Linux
+        Currently supported on M1SDock to to vddio2 being 
+        wrong voltage for OX64
+endmenu

@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.15)
+function(sdk_add_include_directories_ifndef feature)
+  if(NOT DEFINED ${feature})
+    sdk_add_include_directories(${ARGN})
+  endif()
+endfunction()

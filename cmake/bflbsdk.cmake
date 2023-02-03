@@ -44,6 +44,7 @@ if(BOARD_DIR)
 endif()
 
 find_package(bouffalo_sdk REQUIRED HINTS $ENV{BL_SDK_BASE})
+include(${SDK_PATH}/cmake/sdk.cmake)
 include(${SDK_PATH}/cmake/kconfig.cmake)
 
 add_subdirectory(${SDK_PATH}/bsp/common/ bsp_common)

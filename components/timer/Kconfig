@@ -5,6 +5,6 @@ config COMPONENT_TIMER
     help
         "Timer Component"
 menu "Timer Configuration"
-
+    visible if COMPONENT_TIMER
 
 endmenu
