@@ -1,5 +1,9 @@
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_SYSTEM oblfr)
+#if we do not include the SYSTEM component, we need to at add the include directory */
+sdk_add_include_directories_ifndef(CONFIG_COMPONENT_SYSTEM_OBLFR oblfr/include)
+
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_BUTTON button)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_STATUS_LED indicator)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_TIMER timer)
 sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_NVKVS nvkvs)
+sdk_add_subdirectory_ifdef(CONFIG_COMPONENT_MAILBOX mailbox)

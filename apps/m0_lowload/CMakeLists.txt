@@ -15,10 +15,6 @@ endif()
 
 include(${SDK_PATH}/cmake/bflbsdk.cmake)
 
-target_sources(app PRIVATE 
-     src/bl808_ipc.c)
-
 target_compile_options(app PRIVATE -ggdb -Os)
-sdk_add_include_directories(include)
 sdk_set_main_file(src/main.c)
 project(m0_lowload)
