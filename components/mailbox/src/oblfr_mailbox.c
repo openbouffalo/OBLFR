@@ -1,19 +1,6 @@
-// Copyright 2020-2021 Espressif Systems (Shanghai) CO LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include <stdbool.h>
 #include <string.h>
+#include <sys/queue.h>
 #include <board.h>
 #include <bl808.h>
 #include <bl808_common.h>
@@ -21,6 +8,11 @@
 #include <ipc_reg.h>
 #include <bflb_clock.h>
 #include <bflb_gpio.h>
+#ifdef CONFIG_FREERTOS
+#include <FreeRTOS.h>
+#include <semphr.h>
+#endif
+
 #include "oblfr_mailbox.h"
 #define DBG_TAG "MBOX"
 #include "log.h"
@@ -36,6 +28,66 @@ typedef struct {
     uint32_t count;
     void (*handler)(int irq, void *arg);
 } mbox_irq_t;
+
+typedef struct mbox_signal_s {
+    uint32_t signal;
+    mbox_signal_handler_t handler;
+    void *arg;
+    uint32_t count;
+    bool masked;
+    LIST_ENTRY(mbox_signal_s) list_entry;
+} mbox_signal_t;
+
+static LIST_HEAD(oblfr_mbox_signals, mbox_signal_s) oblfr_mbox_signals = LIST_HEAD_INITIALIZER(oblfr_mbox_signals);
+
+typedef struct mbox_stats_s {
+    uint32_t unhandled_irq;
+    uint32_t unhandled_signals;
+} mbox_stats_t;
+
+static mbox_stats_t mbox_stats = {0};
+
+#ifdef CONFIG_FREERTOS
+static SemaphoreHandle_t oblfr_mbox_signals_lock = NULL;
+#endif
+
+static bool oblfr_mailbox_signal_lock(bool inisr) {
+#ifdef CONFIG_FREERTOS
+    if (inisr) {
+        if (xSemaphoreTakeFromISR(oblfr_mbox_signals_lock, NULL) != pdPASS) {
+            LOG_E("Failed to take mbox signals list lock\r\n");
+            return false;
+        }
+    } else {
+        if (xSemaphoreTake(oblfr_mbox_signals_lock, portMAX_DELAY) != pdPASS) {
+            LOG_E("Failed to take mbox signals list lock\r\n");
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
+static bool oblfr_mailbox_signal_unlock(bool inisr) {
+#ifdef CONFIG_FREERTOS
+    if (inisr) {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        if (xSemaphoreGiveFromISR(oblfr_mbox_signals_lock, &xHigherPriorityTaskWoken) != pdPASS) {
+            LOG_E("Failed to give mbox signals list lock\r\n");
+            return false;
+        }
+        if (xHigherPriorityTaskWoken == pdTRUE) {
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        }
+    } else {
+        if (xSemaphoreGive(oblfr_mbox_signals_lock) != pdPASS) {
+            LOG_E("Failed to give mbox signals list lock\r\n");
+            return false;
+        }
+    }
+#endif
+    return true;
+}
 
 static void Send_IPC_IRQ(int device);
 
@@ -79,7 +131,7 @@ static void GPIO_IRQHandler(int irq, void *arg)
 }
 #endif
 
-static mbox_irq_t ipc_irqs[32] = {
+mbox_irq_t ipc_irqs[32] = {
 #ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_SDH
     [BFLB_IPC_DEVICE_SDHCI] = { "SDH", SDH_IRQn, 0, SDHCI_IRQHandler},
 #endif
@@ -97,7 +149,6 @@ static mbox_irq_t ipc_irqs[32] = {
 #endif
 };
 
-
 static void Send_IPC_IRQ(int device)
 {
     if (ipc_irqs[device].irq == 0) {
@@ -109,6 +160,43 @@ static void Send_IPC_IRQ(int device)
     ipc_irqs[device].count++;
 }
 
+static void oblfr_mailbox_signal_handler(int irq, void *arg) 
+{
+    struct mbox_signal_s *s;
+
+    if (!oblfr_mailbox_signal_lock(true)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return;
+    }
+
+    uint32_t signal = BL_RD_REG(IPC0_BASE, IPC_CPU1_IPC_ILSHR);
+    uint32_t data = BL_RD_REG(IPC0_BASE, IPC_CPU1_IPC_ILSLR);
+    LOG_D("Got IPC Mailbox Signal: %d Data: %d\r\n", signal, data);
+
+    /* clear the signal and data registers */
+    BL_WR_REG(IPC0_BASE, IPC_CPU1_IPC_ILSLR, 0);
+    BL_WR_REG(IPC0_BASE, IPC_CPU1_IPC_ILSHR, 0);
+
+    bool handled = false;
+    LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+        if (s->signal == signal) {
+            handled = true;
+            if (s->masked) {
+                LOG_D("Signal %d masked\r\n", signal);
+                break;
+            }
+            s->handler(signal, data, s->arg);
+            s->count++;
+            break;
+        }
+    }
+    if (!handled) {
+        LOG_W("Got IPC MBOX for unknown signal %d\r\n", signal);
+        mbox_stats.unhandled_signals++;
+    }
+    oblfr_mailbox_signal_unlock(true);
+}
+
 void IPC_M0_IRQHandler(int irq, void *arg)
 {
     int i;
@@ -117,19 +205,20 @@ void IPC_M0_IRQHandler(int irq, void *arg)
     {
         if (irqStatus & (1 << i)) {
             if (i == BFLB_IPC_DEVICE_MAILBOX) {
-                LOG_I("Got Mailbox IRQ\r\n");
+                oblfr_mailbox_signal_handler(irq, arg);
+                break;
             } else {
                 if (ipc_irqs[i].irq == 0) {
                     LOG_W("Got IPC IRQ for unknown peripheral %d\r\n", i);
+                    mbox_stats.unhandled_irq++;
                 } else {
                     LOG_T("Got IPC EOI for Peripheral %s (%d - %d)\r\n", ipc_irqs[i].name, irqStatus, ipc_irqs[i].irq);
-                    //assert(irqStatus == ipc_irqs[irqStatus].irq);                
                     bflb_irq_enable(ipc_irqs[i].irq);
+                    break;
                 }
             }
         }
     }
-
     BL_WR_REG(IPC0_BASE, IPC_CPU0_IPC_ICR, irqStatus);
 }
 
@@ -168,9 +257,117 @@ static oblfr_err_t setup_emac_peripheral(void)
 }
 #endif
 
+oblfr_err_t oblfr_mailbox_add_signal_handler(uint32_t signal, mbox_signal_handler_t handler, void *arg)
+{
+    struct mbox_signal_s *s;
+    if (!oblfr_mailbox_signal_lock(false)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return OBLFR_ERR_TIMEOUT;
+    }
+
+    LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+        if (s->signal == signal) {
+            LOG_W("Signal %d already registered\r\n", signal);
+            oblfr_mailbox_signal_unlock(false);
+            return OBLFR_ERR_INVALID;
+        }
+    }
+
+    mbox_signal_t *newsig = malloc(sizeof(mbox_signal_t));
+    if (!newsig) {
+        LOG_W("Can't allocate signal\r\n");
+        oblfr_mailbox_signal_unlock(false);
+        return OBLFR_ERR_NOMEM;
+    }
+
+    newsig->signal = signal;
+    newsig->handler = handler;
+    newsig->arg = arg;
+    newsig->count = 0;
+    newsig->masked = false;
+    newsig->list_entry.le_next = NULL;
+
+    LIST_INSERT_HEAD(&oblfr_mbox_signals, newsig, list_entry);
+    LOG_D("Added Signal Handler for %d\r\n", signal);
+    oblfr_mailbox_signal_unlock(false);
+    return OBLFR_OK;
+}
+
+oblfr_err_t oblfr_mailbox_del_signal_handler(uint32_t signal) {
+    struct mbox_signal_s *s;
+    if (!oblfr_mailbox_signal_lock(false)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return OBLFR_ERR_TIMEOUT;
+    }
+
+    LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+        if (s->signal == signal) {
+            LOG_D("Deleting Signal Handler for %d \r\n", signal);
+            LIST_REMOVE(s, list_entry);
+            break;
+        }
+    }
+    oblfr_mailbox_signal_unlock(false); 
+    return OBLFR_OK;   
+}
+
+oblfr_err_t oblfr_mailbox_send_signal(uint32_t source, uint32_t signal)
+{
+    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSLR, source);
+    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSHR, signal);
+
+    /* trigger a IPC */
+    BL_WR_REG(IPC2_BASE, IPC_CPU1_IPC_ISWR, (1 << BFLB_IPC_DEVICE_MAILBOX));
+    LOG_D("Sent IPC Mailbox Source: %d Signal: %d\r\n", source, signal);
+    return OBLFR_OK;
+}
+
+oblfr_err_t oblfr_mailbox_mask_signal(uint32_t signal)
+{
+    struct mbox_signal_s *s;
+    if (!oblfr_mailbox_signal_lock(false)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return OBLFR_ERR_TIMEOUT;
+    }
+
+    LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+        if (s->signal == signal) {
+//              s->masked = true;
+                LOG_D("Masked Signal %d\r\n", signal);
+            break;
+        }
+    } 
+
+    oblfr_mailbox_signal_unlock(false);
+    return OBLFR_OK;
+}
+
+oblfr_err_t oblfr_mailbox_unmask_signal(uint32_t signal)
+{
+    struct mbox_signal_s *s;
+    if (!oblfr_mailbox_signal_lock(false)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return OBLFR_ERR_TIMEOUT;
+    }
+    LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+        if (s->signal == signal) {
+//            s->masked = false;
+            LOG_D("Unmasked Signal %d\r\n", signal);    
+            break;
+        }
+    }
+
+    oblfr_mailbox_signal_unlock(false);     
+    return OBLFR_OK;
+}
+
 oblfr_err_t oblfr_mailbox_init()
 {
     int i;
+
+#ifdef CONFIG_FREERTOS
+    oblfr_mbox_signals_lock = xSemaphoreCreateMutex();
+#endif
 
     /* setup the IPC Interupt */
     bflb_irq_attach(IPC_M0_IRQn, IPC_M0_IRQHandler, NULL);
@@ -206,12 +403,27 @@ oblfr_err_t oblfr_mailbox_init()
 
 oblfr_err_t oblfr_mailbox_dump() 
 {
+    struct mbox_signal_s *s;
     LOG_I("Mailbox IRQ Stats:\r\n");
     for (uint8_t i = 0; i < sizeof(ipc_irqs) / sizeof(ipc_irqs[0]); i++) {
         if (ipc_irqs[i].irq != 0) {
-            LOG_I("Peripheral %s (%d): %d\r\n", ipc_irqs[i].name, ipc_irqs[i].irq, ipc_irqs[i].count);
+            LOG_I("\tPeripheral %s (%d): %d\r\n", ipc_irqs[i].name, ipc_irqs[i].irq, ipc_irqs[i].count);
         }
     }
+    if (!oblfr_mailbox_signal_lock(false)) {
+        LOG_W("Can't Take Signal Lock\r\n");
+        return OBLFR_ERR_TIMEOUT;
+    }
+    if (LIST_FIRST(&oblfr_mbox_signals)) {
+        LOG_I("Mailbox Signal Stats:\r\n");
+        LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
+            LOG_I("\tSignal %d: %d\r\n", s->signal, s->count);
+        }
+    }
+    LOG_I("Unhandled Interupts: %d Unhandled Signals %d\r\n", mbox_stats.unhandled_irq, mbox_stats.unhandled_signals);    
     LOG_I("====================================\r\n");
+
+    oblfr_mailbox_signal_unlock(false);
     return OBLFR_OK;
 }
+
