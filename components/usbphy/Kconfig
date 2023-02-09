@@ -1,0 +1,10 @@
+config COMPONENT_USBPHY
+    bool "USBPHY Support for Linux"
+    default y
+    help
+        This initialize the power supply for the USB chip. Enable this
+	component if you are running linux on the D0 core and want to have
+	working USB
+
+        Please see the README.md file in the usbphy component directory
+        for more information
