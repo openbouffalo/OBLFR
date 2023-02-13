@@ -69,4 +69,16 @@
 
 void bflb_usb_phy_init(void);
 
+// USB REGS
+
+#define USB_GLB_INT_OFFSET          (0xC4)  /* GLB_INT */
+
+
+/* 0xC4 : GLB_INT */
+#define USB_MDEV_INT (1 << 0U)
+#define USB_MOTG_INT (1 << 1U)
+#define USB_MHC_INT  (1 << 2U)
+#define USB_POLARITY (1 << 3U)
+
+
 #endif

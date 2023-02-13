@@ -35,6 +35,11 @@
 #include <arch/risc-v/riscv_arch.h>
 #include <hardware/usb_v2_reg.h>
 #include "oblfr_usbphy.h"
+#define DBG_TAG "USBPHY"
+#include "log.h"
+
+// Enable USB A mode instead of B
+//#define USB_HOST
 
 void bflb_usb_phy_init(void)
 {
@@ -86,11 +91,19 @@ void bflb_usb_phy_init(void)
     putreg32(regval, BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
 
     bflb_mtimer_delay_ms(2);
-
+    
     regval = getreg32(BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
-    regval &= ~PDS_REG_USB_DRVBUS_POL;
+    LOG_I("PDS CTL %x\r\n", regval);
+    //regval &= ~PDS_REG_USB_DRVBUS_POL;
+
+#ifdef USB_HOST
     regval &= ~PDS_REG_USB_IDDIG;
+#else
+    regval |= PDS_REG_USB_IDDIG;
+#endif
+    
     putreg32(regval, BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
 
+    bflb_mtimer_delay_ms(10);
 }
 
