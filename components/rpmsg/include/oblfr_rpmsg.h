@@ -1,7 +1,13 @@
 #ifndef IPC_H
 #define IPC_H
 #include "oblfr_mailbox.h"
-
+/** 
+ * @brief Device Status Enum
+ */
+typedef enum device_status_e {
+    DEVICE_DOWN, /*<- Device is Down */
+    DEVICE_UP,   /*<- Device is up and ready to transmit/recieve */
+} device_status_t;
 
 /**
  * @brief Opaque handle to RPMSG endpoint
@@ -12,6 +18,14 @@ typedef struct oblfr_queue_entry_s oblfr_queue_entry_t;
  * @brief RPMSG callback function
  */
 typedef void (*oblfr_rpmsg_cb_t)(void* data, size_t len, void* priv);
+
+/* forward declaration */
+typedef struct oblfr_device_cfg_s oblfr_device_cfg_t;
+
+/**
+ * @brief RPMSG Device Status Change Callback
+ */
+typedef void (*oblfr_rpmsg_device_status_cb_t)(oblfr_device_cfg_t *device, device_status_t status);
 
 /**
  * @brief RPMSG endpoint configuration
@@ -26,6 +40,7 @@ typedef struct oblfr_device_cfg_s
 {
     char name[16];
     oblfr_rpmsg_cb_t cb;
+    oblfr_rpmsg_device_status_cb_t status_cb;
     void *priv;
 } oblfr_device_cfg_t;
 

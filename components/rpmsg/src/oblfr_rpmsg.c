@@ -58,8 +58,15 @@ static void ipc_rpmsg_ns_callback(uint32_t new_ept, const char *new_ept_name, ui
         {
             if (rpmsgqueue->dst == RL_ADDR_ANY)
             {
-                rpmsgqueue->dst = new_ept;
-                LOG_D("Updated Device %s with endpoint %d - flags %d\r", new_ept_name, new_ept, flags);
+                if (flags == RL_NS_CREATE) {
+                    rpmsgqueue->dst = new_ept;
+                    LOG_D("Updated Device %s with endpoint %d - flags %d\r", new_ept_name, new_ept, flags);
+                } else if (flags == RL_NS_DESTROY) {
+                    rpmsgqueue->dst = 0;
+                    LOG_D("Device %s is Down - flags %d\r", new_ept_name, new_ept, flags);
+                }
+                if (rpmsgqueue->cfg->status_cb != NULL)
+                    rpmsgqueue->cfg->status_cb(rpmsgqueue->cfg, flags == RL_NS_CREATE ? DEVICE_UP : DEVICE_DOWN);
                 break;
             }
         }
@@ -80,6 +87,15 @@ oblfr_err_t init_rpmsg()
         LOG_E("RPMSG init failed\r\n");
         return OBLFR_ERR_ERROR;
     }
+    xQueueSet = xQueueCreateSet(MAX_QUEUESET_SIZE);
+    if (xQueueSet == NULL)
+    {
+        LOG_E("Failed to create QueueSet\r\n");
+        rpmsg_lite_deinit(ipc_rpmsg);
+        ipc_rpmsg = NULL;
+        return OBLFR_ERR_ERROR;
+    }
+
     if (xTaskCreate(oblfr_rpmsg_task, "rpmsg", 1024, NULL, 5, NULL) != pdPASS)
     {
         LOG_E("Failed to create RPMSG task\r\n");
@@ -340,7 +356,6 @@ void oblfr_process_queue(oblfr_queue_entry_t *rpmsgqueue)
 
 void oblfr_rpmsg_task(void *arg)
 {
-    xQueueSet = xQueueCreateSet(MAX_QUEUESET_SIZE);
     oblfr_queue_entry_t *rpmsgqueue;
 
     LOG_I("Waiting for RPMSG link up\r\n");
@@ -377,21 +392,29 @@ void oblfr_rpmsg_task(void *arg)
 
     while (1)
     {
-        QueueSetMemberHandle_t xActivatedMember = xQueueSelectFromSet(xQueueSet, portMAX_DELAY);
-        bool handled = false;
-        LIST_FOREACH(rpmsgqueue, &oblfr_rpmsg_queues, list_entry)
+        QueueSetMemberHandle_t xActivatedMember = xQueueSelectFromSet(xQueueSet, 1000 / portTICK_PERIOD_MS);
+        if (xActivatedMember != NULL)
         {
-            if (rpmsgqueue->queue == xActivatedMember)
+            LOG_D("Selected queue %p\r\n", xActivatedMember);
+            bool handled = false;
+            LIST_FOREACH(rpmsgqueue, &oblfr_rpmsg_queues, list_entry)
             {
-                LOG_D("Received message on queue %s\r\n", rpmsgqueue->cfg->name);
-                oblfr_process_queue(rpmsgqueue);
-                handled = true;
-                break;
+                LOG_D("Checking queue %s\r\n", rpmsgqueue->cfg->name);
+                if (rpmsgqueue->queue == xActivatedMember)
+                {
+                    LOG_D("Received message on queue %s\r\n", rpmsgqueue->cfg->name);
+                    oblfr_process_queue(rpmsgqueue);
+                    handled = true;
+                    break;
+                }
             }
-        }
-        if (!handled)
-        {
-            LOG_E("Received message on unknown queue\r\n");
+            if (!handled)
+            {
+                LOG_E("Received message on unknown queue\r\n");
+            }
+        } else {
+            /* occasionally check our RX Queue in case we miss a interupt */
+            env_isr(1);
         }
     }
 

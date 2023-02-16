@@ -30,7 +30,8 @@ typedef struct {
 } mbox_irq_t;
 
 typedef struct mbox_signal_s {
-    uint32_t signal;
+    uint16_t service;
+    uint16_t op;
     mbox_signal_handler_t handler;
     void *arg;
     uint32_t count;
@@ -54,12 +55,14 @@ static SemaphoreHandle_t oblfr_mbox_signals_lock = NULL;
 static bool oblfr_mailbox_signal_lock(bool inisr) {
 #ifdef CONFIG_FREERTOS
     if (inisr) {
-        if (xSemaphoreTakeFromISR(oblfr_mbox_signals_lock, NULL) != pdPASS) {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        if (xSemaphoreTakeFromISR(oblfr_mbox_signals_lock, &xHigherPriorityTaskWoken) != pdPASS) {
             LOG_E("Failed to take mbox signals list lock\r\n");
             return false;
         }
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     } else {
-        if (xSemaphoreTake(oblfr_mbox_signals_lock, portMAX_DELAY) != pdPASS) {
+        if (xSemaphoreTake(oblfr_mbox_signals_lock, pdMS_TO_TICKS(2000)) != pdPASS) {
             LOG_E("Failed to take mbox signals list lock\r\n");
             return false;
         }
@@ -76,9 +79,7 @@ static bool oblfr_mailbox_signal_unlock(bool inisr) {
             LOG_E("Failed to give mbox signals list lock\r\n");
             return false;
         }
-        if (xHigherPriorityTaskWoken == pdTRUE) {
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-        }
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     } else {
         if (xSemaphoreGive(oblfr_mbox_signals_lock) != pdPASS) {
             LOG_E("Failed to give mbox signals list lock\r\n");
@@ -164,37 +165,45 @@ static void oblfr_mailbox_signal_handler(int irq, void *arg)
 {
     struct mbox_signal_s *s;
 
-    if (!oblfr_mailbox_signal_lock(true)) {
-        LOG_W("Can't Take Signal Lock\r\n");
-        return;
-    }
-
     uint32_t signal = BL_RD_REG(IPC0_BASE, IPC_CPU1_IPC_ILSHR);
     uint32_t data = BL_RD_REG(IPC0_BASE, IPC_CPU1_IPC_ILSLR);
-    LOG_D("Got IPC Mailbox Signal: %d Data: %d\r\n", signal, data);
 
-    /* clear the signal and data registers */
-    BL_WR_REG(IPC0_BASE, IPC_CPU1_IPC_ILSLR, 0);
-    BL_WR_REG(IPC0_BASE, IPC_CPU1_IPC_ILSHR, 0);
+    uint16_t service = (signal >> 16);
+    uint16_t op = (signal & 0xFFFF);
+
+    LOG_D("Got IPC Mailbox Service: %d, Operation: %d Data: %d\r\n", service, op, data);
 
     bool handled = false;
+    if (!oblfr_mailbox_signal_lock(true)) {
+        LOG_W("%s Can't Take Signal Lock\r\n", __FUNCTION__);
+        goto err;
+    }
     LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-        if (s->signal == signal) {
+        if ((s->service == service) & (s->op = op)) {
             handled = true;
             if (s->masked) {
                 LOG_D("Signal %d masked\r\n", signal);
                 break;
             }
-            s->handler(signal, data, s->arg);
+            __asm volatile ("fence":::"memory");
+            s->handler(service, op, data, s->arg);
             s->count++;
             break;
         }
     }
+    oblfr_mailbox_signal_unlock(true);
+
     if (!handled) {
-        LOG_W("Got IPC MBOX for unknown signal %d\r\n", signal);
+        LOG_W("Got IPC MBOX for unknown service %d, op %d\r\n", service, op);
         mbox_stats.unhandled_signals++;
     }
-    oblfr_mailbox_signal_unlock(true);
+
+err:
+    /* send a EOI */
+    BL_WR_REG(IPC2_BASE, IPC_CPU1_IPC_ISWR, (1 << BFLB_IPC_DEVICE_MBOX_RX));
+    LOG_D("Signal Handler Done\r\n");
+
+
 }
 
 void IPC_M0_IRQHandler(int irq, void *arg)
@@ -204,8 +213,11 @@ void IPC_M0_IRQHandler(int irq, void *arg)
     for (i = 0; i < sizeof(irqStatus) * 8; i++)
     {
         if (irqStatus & (1 << i)) {
-            if (i == BFLB_IPC_DEVICE_MAILBOX) {
+            if (i == BFLB_IPC_DEVICE_MBOX_RX) {
                 oblfr_mailbox_signal_handler(irq, arg);
+                break;
+            } else if (i == BFLB_IPC_DEVICE_MBOX_TX) {
+                LOG_D("Got IPC MBOX TX EOI\r");
                 break;
             } else {
                 if (ipc_irqs[i].irq == 0) {
@@ -219,6 +231,7 @@ void IPC_M0_IRQHandler(int irq, void *arg)
             }
         }
     }
+
     BL_WR_REG(IPC0_BASE, IPC_CPU0_IPC_ICR, irqStatus);
 }
 
@@ -257,17 +270,17 @@ static oblfr_err_t setup_emac_peripheral(void)
 }
 #endif
 
-oblfr_err_t oblfr_mailbox_add_signal_handler(uint32_t signal, mbox_signal_handler_t handler, void *arg)
+oblfr_err_t oblfr_mailbox_add_signal_handler(uint16_t service, uint16_t op, mbox_signal_handler_t handler, void *arg)
 {
     struct mbox_signal_s *s;
     if (!oblfr_mailbox_signal_lock(false)) {
-        LOG_W("Can't Take Signal Lock\r\n");
+        LOG_W("%s Can't Take Signal Lock\r\n", __FUNCTION__);
         return OBLFR_ERR_TIMEOUT;
     }
 
     LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-        if (s->signal == signal) {
-            LOG_W("Signal %d already registered\r\n", signal);
+        if ((s->service == service) & (s->op = op)) {
+            LOG_W("Service %d Op %d already registered\r\n", service, op);
             oblfr_mailbox_signal_unlock(false);
             return OBLFR_ERR_INVALID;
         }
@@ -280,7 +293,8 @@ oblfr_err_t oblfr_mailbox_add_signal_handler(uint32_t signal, mbox_signal_handle
         return OBLFR_ERR_NOMEM;
     }
 
-    newsig->signal = signal;
+    newsig->service = service;
+    newsig->op = op;
     newsig->handler = handler;
     newsig->arg = arg;
     newsig->count = 0;
@@ -288,12 +302,12 @@ oblfr_err_t oblfr_mailbox_add_signal_handler(uint32_t signal, mbox_signal_handle
     newsig->list_entry.le_next = NULL;
 
     LIST_INSERT_HEAD(&oblfr_mbox_signals, newsig, list_entry);
-    LOG_D("Added Signal Handler for %d\r\n", signal);
+    LOG_D("Added Signal Handler for Service %d, Op %d\r\n", service, op);
     oblfr_mailbox_signal_unlock(false);
     return OBLFR_OK;
 }
 
-oblfr_err_t oblfr_mailbox_del_signal_handler(uint32_t signal) {
+oblfr_err_t oblfr_mailbox_del_signal_handler(uint16_t service, uint16_t op) {
     struct mbox_signal_s *s;
     if (!oblfr_mailbox_signal_lock(false)) {
         LOG_W("Can't Take Signal Lock\r\n");
@@ -301,8 +315,8 @@ oblfr_err_t oblfr_mailbox_del_signal_handler(uint32_t signal) {
     }
 
     LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-        if (s->signal == signal) {
-            LOG_D("Deleting Signal Handler for %d \r\n", signal);
+        if ((s->service == service) & (s->op == op)) {
+            LOG_D("Deleting Signal Handler for Service %d, op %d \r\n", service, op);
             LIST_REMOVE(s, list_entry);
             break;
         }
@@ -311,18 +325,21 @@ oblfr_err_t oblfr_mailbox_del_signal_handler(uint32_t signal) {
     return OBLFR_OK;   
 }
 
-oblfr_err_t oblfr_mailbox_send_signal(uint32_t source, uint32_t signal)
+oblfr_err_t oblfr_mailbox_send_signal(uint16_t service, uint16_t op, uint32_t arg)
 {
-    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSLR, source);
-    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSHR, signal);
+    uint32_t tmpVal = (service << 16) | op;
+    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSHR, tmpVal);
+    BL_WR_REG(IPC2_BASE, IPC_CPU0_IPC_ILSLR, arg);
+
+    LOG_D("Sent IPC Mailbox Singal: service %d op: %d, arg %d\r\n", service, op, arg);
 
     /* trigger a IPC */
-    BL_WR_REG(IPC2_BASE, IPC_CPU1_IPC_ISWR, (1 << BFLB_IPC_DEVICE_MAILBOX));
-    LOG_D("Sent IPC Mailbox Source: %d Signal: %d\r\n", source, signal);
+    BL_WR_REG(IPC2_BASE, IPC_CPU1_IPC_ISWR, (1 << BFLB_IPC_DEVICE_MBOX_TX));
+
     return OBLFR_OK;
 }
 
-oblfr_err_t oblfr_mailbox_mask_signal(uint32_t signal)
+oblfr_err_t oblfr_mailbox_mask_signal(uint16_t service, uint16_t op)
 {
     struct mbox_signal_s *s;
     if (!oblfr_mailbox_signal_lock(false)) {
@@ -331,9 +348,9 @@ oblfr_err_t oblfr_mailbox_mask_signal(uint32_t signal)
     }
 
     LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-        if (s->signal == signal) {
+        if ((s->service == service) & (s->op == op)) {
 //              s->masked = true;
-                LOG_D("Masked Signal %d\r\n", signal);
+            LOG_D("Masked Signal Service %d, Op %d\r\n", service, op);
             break;
         }
     } 
@@ -342,7 +359,7 @@ oblfr_err_t oblfr_mailbox_mask_signal(uint32_t signal)
     return OBLFR_OK;
 }
 
-oblfr_err_t oblfr_mailbox_unmask_signal(uint32_t signal)
+oblfr_err_t oblfr_mailbox_unmask_signal(uint16_t service, uint16_t op)
 {
     struct mbox_signal_s *s;
     if (!oblfr_mailbox_signal_lock(false)) {
@@ -350,9 +367,9 @@ oblfr_err_t oblfr_mailbox_unmask_signal(uint32_t signal)
         return OBLFR_ERR_TIMEOUT;
     }
     LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-        if (s->signal == signal) {
+        if ((s->service == service) & (s->op == op)) {
 //            s->masked = false;
-            LOG_D("Unmasked Signal %d\r\n", signal);    
+            LOG_D("Unmasked Signal Service %d, Op %d\r\n", service, op);    
             break;
         }
     }
@@ -411,13 +428,13 @@ oblfr_err_t oblfr_mailbox_dump()
         }
     }
     if (!oblfr_mailbox_signal_lock(false)) {
-        LOG_W("Can't Take Signal Lock\r\n");
+        LOG_W("%s Can't Take Signal Lock\r\n", __FUNCTION__);
         return OBLFR_ERR_TIMEOUT;
     }
     if (LIST_FIRST(&oblfr_mbox_signals)) {
         LOG_I("Mailbox Signal Stats:\r\n");
         LIST_FOREACH(s, &oblfr_mbox_signals, list_entry) {
-            LOG_I("\tSignal %d: %d\r\n", s->signal, s->count);
+            LOG_I("Service %d, Op %d: %d\r\n", s->service, s->op, s->count);
         }
     }
     LOG_I("Unhandled Interupts: %d Unhandled Signals %d\r\n", mbox_stats.unhandled_irq, mbox_stats.unhandled_signals);    

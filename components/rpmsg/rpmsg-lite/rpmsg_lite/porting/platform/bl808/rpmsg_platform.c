@@ -28,10 +28,9 @@ static int32_t in_isr_counter = 0;
 static LOCK_STATIC_CONTEXT platform_lock_static_ctxt;
 #endif
 
-static void platform_isr_handle(uint32_t signal, uint32_t param, void *arg) {
-    LOG_D("RP: signal %d %d\r\n", signal, param);
-    env_isr(0);
-    env_isr(1);
+static void platform_isr_handle(uint16_t service, uint16_t op, uint32_t param, void *arg) {
+    LOG_D("RP: Service %d, Op %d Param %d\r\n", service, op, param);
+    env_isr(param);
 }
 
 static void platform_global_isr_disable(void)
@@ -54,7 +53,7 @@ int32_t platform_init_interrupt(uint32_t vector_id, void *isr_data)
     if (isr_counter == 0)
     {
         LOG_D("RP: init irq vector %ld\r\n", vector_id);
-        oblfr_mailbox_add_signal_handler(1, platform_isr_handle, NULL);
+        oblfr_mailbox_add_signal_handler(BFLB_IPC_MBOX_VIRTIO, BFLB_IPC_MBOX_VIRTIO_OP_KICK, platform_isr_handle, NULL);
     }
     isr_counter++;
 
@@ -73,7 +72,7 @@ int32_t platform_deinit_interrupt(uint32_t vector_id)
     if (isr_counter == 0)
     {
         LOG_D("RP: deinit irq vector %ld\r\n", vector_id);
-        oblfr_mailbox_del_signal_handler(1);
+        oblfr_mailbox_del_signal_handler(BFLB_IPC_MBOX_VIRTIO, BFLB_IPC_MBOX_VIRTIO_OP_KICK);
     }
 
     /* Unregister ISR from environment layer */
@@ -88,7 +87,7 @@ void platform_notify(uint32_t vector_id)
 {
 
     env_lock_mutex(platform_lock);
-    oblfr_mailbox_send_signal(1, vector_id);
+    oblfr_mailbox_send_signal(BFLB_IPC_MBOX_VIRTIO, BFLB_IPC_MBOX_VIRTIO_OP_KICK, vector_id);
     env_unlock_mutex(platform_lock);
 }
 
@@ -137,7 +136,7 @@ int32_t platform_interrupt_enable(uint32_t vector_id)
     if (disable_counter == 0)
     {
         LOG_D("RP: enable irq vector %ld\r\n", vector_id);
-        oblfr_mailbox_unmask_signal(1);
+        oblfr_mailbox_unmask_signal(BFLB_IPC_MBOX_VIRTIO, BFLB_IPC_MBOX_VIRTIO_OP_KICK);
     }
     platform_global_isr_enable();
     return ((int32_t)vector_id);
@@ -163,7 +162,7 @@ int32_t platform_interrupt_disable(uint32_t vector_id)
     if (disable_counter == 0)
     {
         LOG_D("RP: disable irq vector %ld\r\n", vector_id);
-        oblfr_mailbox_mask_signal(1);
+        oblfr_mailbox_mask_signal(BFLB_IPC_MBOX_VIRTIO, BFLB_IPC_MBOX_VIRTIO_OP_KICK);
     }
     disable_counter++;
     platform_global_isr_enable();

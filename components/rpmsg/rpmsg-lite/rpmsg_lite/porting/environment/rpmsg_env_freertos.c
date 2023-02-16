@@ -722,6 +722,7 @@ int32_t env_put_queue(void *queue, void *msg, uint32_t timeout_ms)
             portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
             return 1;
         }
+        LOG_E("Failed to send from ISR\r\n");
     }
     else
     {
@@ -730,6 +731,8 @@ int32_t env_put_queue(void *queue, void *msg, uint32_t timeout_ms)
         {
             return 1;
         }
+        LOG_E("Failed to send\r\n");
+
     }
     return 0;
 }
