@@ -61,8 +61,11 @@ static oblfr_err_t oblfr_recalc_next_fire() {
         return OBLFR_ERR_ERROR;
     }
     oblfr_timer_t head = LIST_FIRST(&oblfr_timer_list);
-
-    assert(head != NULL);
+    if (head == NULL) {
+        LOG_D("oblfr_recalc_next_fire: no timers\r\n");
+        oblfr_timer_unlock();
+        return OBLFR_OK;
+    }
 
     uint64_t when = (head->when - bflb_mtimer_get_time_ms());
     if (when > 1000) {
@@ -174,10 +177,11 @@ oblfr_err_t oblfr_timer_init() {
 
     vSemaphoreCreateBinary(oblfr_timer_list_lock);
 
-    if (xTaskCreate(oblfr_timer_task, "oblfr_timer_task", 1024, NULL, 5, &oblfr_timer_task_handle) != pdPASS) {
+    if (xTaskCreate(oblfr_timer_task, "timer_task", 1024, NULL, 2, &oblfr_timer_task_handle) != pdPASS) {
         LOG_E("Create Timer Task failed\r\n");
         return OBLFR_ERR_ERROR;
     }
+    LOG_I("oblfr_timer_init: Timer Task created\r\n");
     bflb_timer_start(timer0);
     return OBLFR_OK;
 }
