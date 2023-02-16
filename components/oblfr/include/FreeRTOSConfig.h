@@ -66,6 +66,7 @@
 #define configIDLE_SHOULD_YIELD                 0
 #define configUSE_MUTEXES                       1
 #define configQUEUE_REGISTRY_SIZE               8
+#define configUSE_QUEUE_SETS                    1
 #define configCHECK_FOR_STACK_OVERFLOW          CONFIG_COMPONENT_SYSTEM_CHECK_STACK_OVERFLOW
 #define configUSE_RECURSIVE_MUTEXES             1
 #define configUSE_MALLOC_FAILED_HOOK            1

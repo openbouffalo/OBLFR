@@ -1,0 +1,29 @@
+sdk_generate_library(librpmsg-lite)
+sdk_library_add_sources(
+    rpmsg_lite/rpmsg_lite.c
+    rpmsg_lite/rpmsg_queue.c
+    rpmsg_lite/rpmsg_ns.c
+    common/llist.c
+    virtio/virtqueue.c
+    rpmsg_lite/porting/platform/bl808/rpmsg_platform.c
+)
+if(CONFIG_FREERTOS)
+sdk_library_add_sources(
+    rpmsg_lite/porting/environment/rpmsg_env_freertos.c
+)
+sdk_add_include_directories(
+    include/environment/freertos
+)
+else()
+sdk_library_add_sources(
+    rpmsg_lite/porting/environment/rpmsg_env_bm.c
+)
+sdk_add_include_directories(
+    include/environment/bm
+)
+endif()
+sdk_add_include_directories(
+    include
+    include/platform/bl808
+    )
+#sdk_add_compile_definitions(-DVQUEUE_DEBUG)
