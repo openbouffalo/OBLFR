@@ -1,0 +1,11 @@
+config COMPONENT_RPMSG
+    bool "RPmsg Component"
+    default n
+    select COMPONENT_SYSTEM
+    help
+        RPmsg Component to allow inter core communication
+        works with bare metal and linux
+
+menu "RPMsg Configuration"
+    visible if COMPONENT_RPMSG
+endmenu

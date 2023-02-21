@@ -31,6 +31,9 @@ typedef enum {
 
 typedef int oblfr_err_t;
 
-
+typedef enum {
+    OBLFR_NO_BLOCK = 0,
+    OBLFR_BLOCK = 0xFFFFFFFFU,
+} OBLFR_Timeout;
 
 #endif
