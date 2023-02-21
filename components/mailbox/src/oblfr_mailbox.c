@@ -22,6 +22,7 @@
 #include <bflb_clock.h>
 #include <bflb_gpio.h>
 #include "oblfr_mailbox.h"
+#include "oblfr_usb_peripheral.h"
 #define DBG_TAG "MBOX"
 #include "log.h"
 
@@ -201,6 +202,10 @@ oblfr_err_t oblfr_mailbox_init()
     }
 #endif
 
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_USB
+    oblfr_usb_peripheral_init();
+#endif
+    
     return OBLFR_OK;
 }
 

@@ -27,6 +27,14 @@ config COMPONENT_MAILBOX_IRQFWD_USB
     help
         Curently disabled as USB is not working
 
+config COMPONENT_MAILBOX_USB_HOST
+        depends on COMPONENT_MAILBOX_IRQFWD_USB
+        bool "Set USB to HOST mode"
+        default n
+    help
+        By default USB operates in peripheral mode. Set this to use the
+        USB adapter as a host device.
+
 config COMPONENT_MAILBOX_IRQFWD_GPIO
     bool "Enable IRQ forwarding for GPIO"
     default y

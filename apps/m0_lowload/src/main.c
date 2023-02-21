@@ -25,22 +25,16 @@
 #include <board.h>
 #include <bflb_mtimer.h>
 #include "oblfr_mailbox.h"
-#include "oblfr_usbphy.h"
 #include "sdkconfig.h"
 
 #define DBG_TAG "MAIN"
 #include <log.h>
 
+
 int main(void)
 {
     board_init();
 
-#ifdef CONFIG_COMPONENT_USBPHY
-   
-    bflb_usb_phy_init();
-
-#endif
-    
     LOG_I("Starting Mailbox Handlers\r\n");
 
     if (oblfr_mailbox_init() != OBLFR_OK) {

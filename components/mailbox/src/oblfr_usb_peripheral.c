@@ -34,14 +34,16 @@
 
 #include <arch/risc-v/riscv_arch.h>
 #include <hardware/usb_v2_reg.h>
-#include "oblfr_usbphy.h"
-#define DBG_TAG "USBPHY"
+#include <board.h>
+#include <bflb_mtimer.h>
+#include "oblfr_usb_peripheral.h"
+#define DBG_TAG "USB"
 #include "log.h"
 
 // Enable USB A mode instead of B
-//#define USB_HOST
+#define USB_HOST
 
-void bflb_usb_phy_init(void)
+void oblfr_usb_peripheral_init(void)
 {
     uint32_t regval;
 
@@ -55,6 +57,8 @@ void bflb_usb_phy_init(void)
     /* wait(soc616_b0.usb_uclk);                                          */
 
 
+    LOG_I("Initializing USB...\r\n");
+    
     regval = getreg32(BFLB_PDS_BASE + PDS_USB_PHY_CTRL_OFFSET);
     regval &= ~PDS_REG_USB_PHY_XTLSEL_MASK;
     putreg32(regval, BFLB_PDS_BASE + PDS_USB_PHY_CTRL_OFFSET);
@@ -93,15 +97,15 @@ void bflb_usb_phy_init(void)
     bflb_mtimer_delay_ms(2);
     
     regval = getreg32(BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
-    LOG_I("PDS CTL %x\r\n", regval);
-    //regval &= ~PDS_REG_USB_DRVBUS_POL;
 
-#ifdef USB_HOST
+#ifdef CONFIG_COMPONENT_MAILBOX_USB_HOST
+    LOG_I("USB Initialized in HOST mode\r\n");
     regval &= ~PDS_REG_USB_IDDIG;
 #else
+    LOG_I("USB Initialized in DEVICE mode\r\n");
     regval |= PDS_REG_USB_IDDIG;
 #endif
-    
+
     putreg32(regval, BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
 
     bflb_mtimer_delay_ms(10);

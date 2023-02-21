@@ -39,6 +39,8 @@
 
 #include <stdint.h>
 
+void oblfr_usb_peripheral_init(void);
+
 // SUBSYSTEMS
 #define BLFB_USB_BASE ((uint32_t)0x20072000)
 #define BFLB_PDS_BASE ((uint32_t)0x2000e000)
@@ -67,7 +69,6 @@
 #define PDS_REG_USB_PHY_PLLALIV      (1 << 5U)
 #define PDS_REG_PU_USB20_PSW         (1 << 6U)
 
-void bflb_usb_phy_init(void);
 
 // USB REGS
 
