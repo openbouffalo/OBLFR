@@ -43,7 +43,7 @@
 // Enable USB A mode instead of B
 #define USB_HOST
 
-void oblfr_usb_peripheral_init(void)
+oblfr_err_t setup_usb_peripheral(void)
 {
     uint32_t regval;
 
@@ -109,5 +109,7 @@ void oblfr_usb_peripheral_init(void)
     putreg32(regval, BFLB_PDS_BASE + PDS_USB_CTL_OFFSET);
 
     bflb_mtimer_delay_ms(10);
+
+    return OBLFR_OK;
 }
 

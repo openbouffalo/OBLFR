@@ -38,8 +38,9 @@
 #ifndef __OBLFR_USBPHY_H__
 
 #include <stdint.h>
+#include "oblfr_common.h"
 
-void oblfr_usb_peripheral_init(void);
+oblfr_err_t setup_usb_peripheral(void);
 
 // SUBSYSTEMS
 #define BLFB_USB_BASE ((uint32_t)0x20072000)

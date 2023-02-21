@@ -417,7 +417,10 @@ oblfr_err_t oblfr_mailbox_init()
 #endif
 
 #ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_USB
-    oblfr_usb_peripheral_init();
+    if (setup_usb_peripheral() != SUCCESS) {
+        LOG_E("Failed to setup USB peripheral\r\n");
+        return OBLFR_ERR_ERROR;
+    }
 #endif
     
     return OBLFR_OK;
