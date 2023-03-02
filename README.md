@@ -47,8 +47,8 @@ You can use "make flash" to flash the firmware from the commandline instead of u
 
 If you are flashing from BLDevCube, set the CPU to Group0 and use the following addresses for the different cores:
 * For M0 set address = 0x58000000
-* For D0 set address = 0x58010000
-* For LP set address = 0x58020000
+* For D0 set address = 0x58100000
+* For LP set address = 0x58200000
 
 (you may need to modify the cmake/flash.cmake file to specify the correct serial port for your device, or during the initial build, set the COMX enviroment variable to your serial port)
 
