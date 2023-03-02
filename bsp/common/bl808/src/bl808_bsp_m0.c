@@ -171,6 +171,7 @@ void bl808_cpu_init(void)
     flag = bflb_irq_save();
 
     GLB_Halt_CPU(GLB_CORE_ID_D0);
+    GLB_Halt_CPU(GLB_CORE_ID_LP);
 
     ret = bflb_flash_init();
 
@@ -202,17 +203,25 @@ void bl808_cpu_init(void)
         }
     }
 #endif
-    /* set CPU D0 boot XIP address and flash address */
-    // Tzc_Sec_Set_CPU_Group(GLB_CORE_ID_D0, 1);
-    // /* D0 boot from 0x58000000 */
-    // GLB_Set_CPU_Reset_Address(GLB_CORE_ID_D0, 0x58000000);
-    // /* D0 image offset on flash is 0x100000+0x1000(header) */
-    // bflb_sf_ctrl_set_flash_image_offset(0x101000, 1, SF_CTRL_FLASH_BANK0);
+    // /* set CPU D0 boot XIP address and flash address */
+    Tzc_Sec_Set_CPU_Group(GLB_CORE_ID_D0, 1);
+    // // /* D0 boot from 0x58000000 */
+    GLB_Set_CPU_Reset_Address(GLB_CORE_ID_D0, 0x58000000);
+    // // /* D0 image offset on flash is 0x100000+0x1000(header) */
+    bflb_sf_ctrl_set_flash_image_offset(CONFIG_D0_FLASH_ADDR + 0x1000, 1, SF_CTRL_FLASH_BANK0);
+
+    Tzc_Sec_Set_CPU_Group(GLB_CORE_ID_LP, 2);
+    // /* LP boot from 0x58020000 */
+    GLB_Set_CPU_Reset_Address(GLB_CORE_ID_LP, 0x58020000);
+    // /* LP image offset on flash is CONFIG_LP_FLASH_ADDR+0x1000(header) */
+    bflb_sf_ctrl_set_flash_image_offset(CONFIG_LP_FLASH_ADDR + 0x1000, 2, SF_CTRL_FLASH_BANK1);
+
 
     bflb_irq_restore(flag);
 
     /* we do not check header at 0x100000, just boot */
     GLB_Release_CPU(GLB_CORE_ID_D0);
+    GLB_Release_CPU(GLB_CORE_ID_LP);
 
     /* release d0 and then do can run */
     BL_WR_WORD(IPC_SYNC_ADDR1, IPC_SYNC_FLAG);
