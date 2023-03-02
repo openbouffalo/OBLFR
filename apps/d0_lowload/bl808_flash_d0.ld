@@ -24,6 +24,7 @@ HeapMinSize  = 0x1000; /*  4KB */
 
 MEMORY
 {
+    fw_header_memory  (rx)  : ORIGIN = 0x58000000 - 0x1000, LENGTH = 4K
     xip_memory  (rx)  : ORIGIN = 0x58000000, LENGTH = 1M
     itcm_memory (rx)  : ORIGIN = 0x3F000000, LENGTH = 12K
     dtcm_memory (rx)  : ORIGIN = 0x3F003000, LENGTH = 4K
@@ -34,7 +35,11 @@ MEMORY
 
 SECTIONS
 {
-
+    .fw_header :
+    {
+        KEEP(*(.fw_header))
+    } > fw_header_memory
+    
     .text :
     {
         . = ALIGN(4);

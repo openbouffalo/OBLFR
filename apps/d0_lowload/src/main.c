@@ -38,7 +38,7 @@ extern void unlz4(const void *aSource, void *aDestination, uint32_t FileLen);
 #define VM_LINUX_DST_ADDR 0x50000000
 #define OPENSBI_DST_ADDR 0x3EF80000
 #define DTB_DST_ADDR 0x51ff8000
-#define BOOT_HDR_SRC_ADDR 0x58080000 
+#define BOOT_HDR_SRC_ADDR 0x5d5ff000
 
 static struct bflb_device_s *uart0;
 
@@ -138,7 +138,17 @@ void linux_load()
 {
     LOG_I("low_load start... \r\n");
 
+    // for (int32_t i = 0; i < 10000000; i += 4) {
+    //    vm_boot_header_t *header = (vm_boot_header_t *)BOOT_HDR_SRC_ADDR + i;
+    //    if (header->magic == 0x4c4d5642) {
+    //         LOG_I("Header at %d %p\r\n", i, header);
+    //         break;
+    //    }
+    // }
+
+
     vm_boot_header_t *header = (vm_boot_header_t *)BOOT_HDR_SRC_ADDR;
+    LOG_I("Header at 0x%08x\r\n", BOOT_HDR_SRC_ADDR);
     if (header->magic != 0x4c4d5642) {
         LOG_E("invalid boot header magic: 0x%08x\r\n", header->magic);
         return;
