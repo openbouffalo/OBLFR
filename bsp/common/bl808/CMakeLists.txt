@@ -1,13 +1,15 @@
 sdk_add_include_directories(include src)
 
-target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/bl808_bsp_common.c)
+target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/bl808_bsp_common.c ${CMAKE_CURRENT_SOURCE_DIR}/src/fw_header.c)
 if(CPU_ID STREQUAL  "d0")
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/bl808_bsp_d0.c)
 elseif(CPU_ID STREQUAL  "m0")
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/bl808_bsp_m0.c)
+elseif(CPU_ID STREQUAL  "lp")
+target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/bl808_bsp_lp.c)
 else()
 message(FATAL_ERROR "Unknown CPU")
 endif()
+sdk_add_link_options(-ufw_header)
 
 sdk_set_linker_script(bl808_flash_${CPU_ID}.ld)
-

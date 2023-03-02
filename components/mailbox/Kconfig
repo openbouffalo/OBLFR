@@ -1,6 +1,6 @@
 config COMPONENT_MAILBOX
     bool "Mailbox Support for Linux"
-    default y
+    default y if BFLB_CHIP = "bl808"
     help
         Mailbox Component forwards IRQ's to the D0 core for Linux
         support. Enable this component if you are running linux on 

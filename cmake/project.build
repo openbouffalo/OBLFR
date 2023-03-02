@@ -24,8 +24,13 @@ distclean: clean
 	-@rm -rf build || true
 	-@rm -f sdkconfig || true
 
-clean: 
+clean:: 
 	-@rm -f proj.conf || true
 
+flash: default
+	@$(MAKE) -C build flash
+
+monitor: 
+	@$(MAKE) -C build monitor
 
 .PHONY:config clean default distclean
