@@ -20,6 +20,8 @@ target_sources(app PRIVATE
 
 target_compile_options(app PRIVATE -ggdb -Os)
 
+sdk_add_link_options(-ufw_header)
+
 sdk_set_main_file(src/main.c)
 sdk_set_linker_script(bl808_flash_d0.ld)
 project(d0_lowload)
