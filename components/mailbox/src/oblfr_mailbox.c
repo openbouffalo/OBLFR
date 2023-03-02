@@ -254,7 +254,7 @@ oblfr_err_t setup_sdh_peripheral() {
 }
 #endif
 
-#ifdef COMPONENT_MAILBOX_IRQFWD_EMAC
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_EMAC
 static oblfr_err_t setup_emac_peripheral(void)
 {
     GLB_GPIO_Cfg_Type gpio_cfg;
@@ -408,7 +408,7 @@ oblfr_err_t oblfr_mailbox_init()
     }
 #endif
 
-#ifdef COMPONENT_MAILBOX_IRQFWD_EMAC
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_EMAC
     if (setup_emac_peripheral() != SUCCESS) {
         LOG_E("Failed to setup EMAC peripheral\r\n");
         return OBLFR_ERR_ERROR;
