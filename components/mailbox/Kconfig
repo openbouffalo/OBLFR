@@ -1,6 +1,6 @@
 config COMPONENT_MAILBOX
     bool "Mailbox Support for Linux"
-    default y
+    default y if BFLB_CHIP = "bl808"
     help
         Mailbox Component forwards IRQ's to the D0 core for Linux
         support. Enable this component if you are running linux on 
@@ -26,6 +26,14 @@ config COMPONENT_MAILBOX_IRQFWD_USB
 	default n
     help
         Curently disabled as USB is not working
+
+config COMPONENT_MAILBOX_USB_HOST
+        depends on COMPONENT_MAILBOX_IRQFWD_USB
+        bool "Set USB to HOST mode"
+        default n
+    help
+        By default USB operates in peripheral mode. Set this to use the
+        USB adapter as a host device.
 
 config COMPONENT_MAILBOX_IRQFWD_GPIO
     bool "Enable IRQ forwarding for GPIO"

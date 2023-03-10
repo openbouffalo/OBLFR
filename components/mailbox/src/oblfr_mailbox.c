@@ -14,6 +14,7 @@
 #endif
 
 #include "oblfr_mailbox.h"
+#include "oblfr_usb_peripheral.h"
 #define DBG_TAG "MBOX"
 #include "log.h"
 
@@ -254,7 +255,7 @@ oblfr_err_t setup_sdh_peripheral() {
 }
 #endif
 
-#ifdef COMPONENT_MAILBOX_IRQFWD_EMAC
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_EMAC
 static oblfr_err_t setup_emac_peripheral(void)
 {
     GLB_GPIO_Cfg_Type gpio_cfg;
@@ -408,13 +409,20 @@ oblfr_err_t oblfr_mailbox_init()
     }
 #endif
 
-#ifdef COMPONENT_MAILBOX_IRQFWD_EMAC
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_EMAC
     if (setup_emac_peripheral() != SUCCESS) {
         LOG_E("Failed to setup EMAC peripheral\r\n");
         return OBLFR_ERR_ERROR;
     }
 #endif
 
+#ifdef CONFIG_COMPONENT_MAILBOX_IRQFWD_USB
+    if (setup_usb_peripheral() != SUCCESS) {
+        LOG_E("Failed to setup USB peripheral\r\n");
+        return OBLFR_ERR_ERROR;
+    }
+#endif
+    
     return OBLFR_OK;
 }
 
@@ -443,4 +451,3 @@ oblfr_err_t oblfr_mailbox_dump()
     oblfr_mailbox_signal_unlock(false);
     return OBLFR_OK;
 }
-

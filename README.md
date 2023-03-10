@@ -39,6 +39,19 @@ if your bl_mcu_sdk is located in a different path, then the following will work:
 	* lowload firmware is used to assist Linux to boot on the BL808 Device. Please consult the [OpenBouffalo Buildroot repo](https://github.com/openbouffalo/buildroot_bouffalo) for more information
 
 
+## Flashing Different CPU's
+You can use "make flash" to flash the firmware from the commandline instead of using the BLDevCube. By Default, the apps are configured to flash to the M0 core, but you can specify the core to flash to by modifying the flash_prog_cfg.ini file in the root of the project.
+* For M0 set address = 0x000000
+* For D0 set address = 0x100000
+* For LP set address = 0x200000
+
+If you are flashing from BLDevCube, set the CPU to Group0 and use the following addresses for the different cores:
+* For M0 set address = 0x58000000
+* For D0 set address = 0x58100000
+* For LP set address = 0x58200000
+
+(you may need to modify the cmake/flash.cmake file to specify the correct serial port for your device, or during the initial build, set the COMX enviroment variable to your serial port)
+
 ## Configuring SDK Features
 
 The Bouffalo SDK provides numerous configuration options, enabled via the proj.conf in a standard bl_mcu_sdk project. This repository has enabled menuconfig, to give a graphical interface to enable/disable features in the SDK. You can enter the configuration dialog by running in each applications directory: 

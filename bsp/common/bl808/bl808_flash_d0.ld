@@ -35,7 +35,7 @@ SECTIONS
 {
     .fw_header :
     {
-        KEEP(*(.fw_header0))
+        KEEP(*(.fw_header))
     } > fw_header_memory
 
     .text :
