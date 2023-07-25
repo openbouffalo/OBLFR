@@ -8,7 +8,7 @@ For Bouffallo based boards:
 ```
 git clone https://github.com/openbouffalo/OBLFR.git
 git clone https://github.com/bouffalolab/bl_mcu_sdk.git
-git clone git@gitee.com:bouffalolab/toolchain_gcc_t-head_linux.git
+git clone https://gitee.com/bouffalolab/toolchain_gcc_t-head_linux.git
 PATH=$PATH:<directory to toolchain_gcc_t-head_linux>/bin/
 cd OBLFR/apps/helloworld
 make
